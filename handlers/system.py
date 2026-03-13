@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, printer_badge
+from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, printer_badge, offline_guard
 import api
 
 
@@ -15,6 +15,9 @@ async def cb_system(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     L = lang()
     user_id = uid(update)
+
+    if await offline_guard(q, user_id):
+        return
 
     info = await api.system_info(user_id=user_id)
     proc = await api.proc_stats(user_id=user_id)

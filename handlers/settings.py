@@ -41,8 +41,8 @@ def _settings_keyboard() -> InlineKeyboardMarkup:
             "set:notifications.on_filament_runout",
         )],
         [btn(
-            f"{tog(notif.get('on_printer_offline', True))} {t('settings.printer_offline', L)}",
-            "set:notifications.on_printer_offline",
+            f"{tog(notif.get('on_progress_milestone', True))} {t('settings.progress_milestone', L)}",
+            "set:notifications.on_progress_milestone",
         )],
         [btn(
             f"🌡️ {t('settings.temp_alert', L)}: {notif.get('temp_alert_threshold', 0)}°C",
@@ -86,7 +86,7 @@ async def cb_setting_toggle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     key_path = q.data[len("set:"):]
 
-    # ── Cycle-type settings ──────────────────────────────────────────────
+    # ── Cycle-type settings ─────────────────────────────────────────────────────────
     if key_path == "cycle_poll":
         options = [5, 10, 15, 30, 60]
         current = cfg().get("monitoring", {}).get("poll_interval", 10)
@@ -144,7 +144,7 @@ async def cb_setting_toggle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await cb_settings(update, ctx)
         return
 
-    # ── Boolean toggle (dotted path) ─────────────────────────────────────
+    # ── Boolean toggle (dotted path) ───────────────────────────────────────────────────
     parts = key_path.split(".")
     if len(parts) == 2:
         section, key = parts
