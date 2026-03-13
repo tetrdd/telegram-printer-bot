@@ -4,7 +4,7 @@ All UI strings live here. Access via t("key", lang).
 """
 
 STRINGS = {
-    # ── Main Menu ────────────────────────────────────────────────────────
+    # ── Main Menu ────────────────────────────────────────────────────────────────────
     "menu.title": {
         "en": "🖨️ *Printer Control*\n\nChoose an option:",
         "de": "🖨️ *Druckersteuerung*\n\nWähle eine Option:",
@@ -77,8 +77,20 @@ STRINGS = {
         "ru": "Сменить принтер",
         "pl": "Zmień drukarkę",
     },
+    "menu.adjust": {
+        "en": "🔧 Adjust",
+        "de": "🔧 Anpassen",
+        "ru": "🔧 Настройка",
+        "pl": "🔧 Dostosuj",
+    },
+    "menu.bed_mesh": {
+        "en": "📐 Bed Mesh",
+        "de": "📐 Bett-Mesh",
+        "ru": "📐 Сетка стола",
+        "pl": "📐 Siatka stołu",
+    },
 
-    # ── Common ───────────────────────────────────────────────────────────
+    # ── Common ─────────────────────────────────────────────────────────────────────
     "btn.back_menu": {
         "en": "🔙 Menu",
         "de": "🔙 Menü",
@@ -110,7 +122,33 @@ STRINGS = {
         "pl": "❌ Brak połączenia z drukarką.",
     },
 
-    # ── Status ───────────────────────────────────────────────────────────
+    # ── Offline UI ───────────────────────────────────────────────────────────────────
+    "offline.blocked": {
+        "en": "⛔ Printer is offline. This feature is unavailable.",
+        "de": "⛔ Drucker ist offline. Diese Funktion ist nicht verfügbar.",
+        "ru": "⛔ Принтер не в сети. Функция недоступна.",
+        "pl": "⛔ Drukarka jest offline. Ta funkcja jest niedostępna.",
+    },
+    "offline.title": {
+        "en": "⚫ *Printer Offline*",
+        "de": "⚫ *Drucker Offline*",
+        "ru": "⚫ *Принтер не в сети*",
+        "pl": "⚫ *Drukarka offline*",
+    },
+    "offline.cached": {
+        "en": "📋 Last known data (cached):",
+        "de": "📋 Letzte bekannte Daten (gecacht):",
+        "ru": "📋 Последние известные данные (кэш):",
+        "pl": "📋 Ostatnie znane dane (cache):",
+    },
+    "offline.last_seen": {
+        "en": "Last seen: {time}",
+        "de": "Zuletzt gesehen: {time}",
+        "ru": "Последний раз в сети: {time}",
+        "pl": "Ostatnio widziana: {time}",
+    },
+
+    # ── Status ─────────────────────────────────────────────────────────────────────
     "status.title": {
         "en": "📊 *Status Dashboard*",
         "de": "📊 *Statusübersicht*",
@@ -177,8 +215,38 @@ STRINGS = {
         "ru": "▶️ Авто-обновление (5с)",
         "pl": "▶️ Auto-odświeżanie (5s)",
     },
+    "status.speed": {
+        "en": "Speed",
+        "de": "Geschwindigkeit",
+        "ru": "Скорость",
+        "pl": "Prędkość",
+    },
+    "status.flow": {
+        "en": "Flow",
+        "de": "Fluss",
+        "ru": "Поток",
+        "pl": "Przepływ",
+    },
+    "status.fan": {
+        "en": "Fan",
+        "de": "Lüfter",
+        "ru": "Вентилятор",
+        "pl": "Wentylator",
+    },
+    "status.clock_eta": {
+        "en": "Finish at",
+        "de": "Fertig um",
+        "ru": "Готово к",
+        "pl": "Gotowe o",
+    },
+    "status.layers": {
+        "en": "Layers",
+        "de": "Schichten",
+        "ru": "Слои",
+        "pl": "Warstwy",
+    },
 
-    # ── Printer States ───────────────────────────────────────────────────
+    # ── Printer States ───────────────────────────────────────────────────────────────────
     "state.ready": {
         "en": "🟢 Ready",
         "de": "🟢 Bereit",
@@ -234,7 +302,7 @@ STRINGS = {
         "pl": "✅ Ukończono",
     },
 
-    # ── Temperatures ─────────────────────────────────────────────────────
+    # ── Temperatures ───────────────────────────────────────────────────────────────────
     "temps.title": {
         "en": "🌡️ *Temperatures*",
         "de": "🌡️ *Temperaturen*",
@@ -263,7 +331,7 @@ STRINGS = {
         "en": "❄️ Cool All",
         "de": "❄️ Alles kühlen",
         "ru": "❄️ Охладить всё",
-        "pl": "❄️ Schłodź wszystko",
+        "pl": "❄️ Schłódź wszystko",
     },
     "temps.cooled": {
         "en": "❄️ Cooling all heaters",
@@ -320,7 +388,7 @@ STRINGS = {
         "pl": "🔙 Temperatury",
     },
 
-    # ── Print Control ────────────────────────────────────────────────────
+    # ── Print Control ──────────────────────────────────────────────────────────────────
     "ctrl.title": {
         "en": "🖨️ *Print Control*",
         "de": "🖨️ *Drucksteuerung*",
@@ -412,7 +480,7 @@ STRINGS = {
         "pl": "🔓 Silniki wył.",
     },
 
-    # ── Files ────────────────────────────────────────────────────────────
+    # ── Files ──────────────────────────────────────────────────────────────────────
     "files.title": {
         "en": "📂 *Files* — Page {page}/{total}",
         "de": "📂 *Dateien* — Seite {page}/{total}",
@@ -525,7 +593,7 @@ STRINGS = {
         "en": "🖨️ *Start Print?*\n\nFile: `{filename}`",
         "de": "🖨️ *Druck starten?*\n\nDatei: `{filename}`",
         "ru": "🖨️ *Начать печать?*\n\nФайл: `{filename}`",
-        "pl": "🖨️ *Rozpocząć druk?*\n\nPlik: `{filename}`",
+        "pl": "🖨️ *Rozpączyć druk?*\n\nPlik: `{filename}`",
     },
     "files.start_btn": {
         "en": "✅ Start",
@@ -541,7 +609,7 @@ STRINGS = {
     },
     "files.delete_confirm": {
         "en": "🗑️ *Delete file?*\n\n`{filename}`\n\nThis cannot be undone.",
-        "de": "🗑️ *Datei löschen?*\n\n`{filename}`\n\nDas kann nicht rückgängig gemacht werden.",
+        "de": "🗑️ *Datei löschen?*\n\n`{filename}`\n\nDas kann nicht rükgängig gemacht werden.",
         "ru": "🗑️ *Удалить файл?*\n\n`{filename}`\n\nЭто действие нельзя отменить.",
         "pl": "🗑️ *Usunąć plik?*\n\n`{filename}`\n\nTej operacji nie można cofnąć.",
     },
@@ -564,7 +632,7 @@ STRINGS = {
         "pl": "🗑️ Usunięto",
     },
 
-    # ── Camera ───────────────────────────────────────────────────────────
+    # ── Camera ─────────────────────────────────────────────────────────────────────
     "camera.title": {
         "en": "📷 *Camera*",
         "de": "📷 *Kamera*",
@@ -614,7 +682,7 @@ STRINGS = {
         "pl": "📷 Robię zdjęcie...",
     },
 
-    # ── GCode Console ────────────────────────────────────────────────────
+    # ── GCode Console ──────────────────────────────────────────────────────────────────
     "gcode.title": {
         "en": "💻 *GCode Console*\n\nQuick commands below, or type any GCode command:",
         "de": "💻 *GCode-Konsole*\n\nSchnellbefehle unten, oder tippe einen GCode-Befehl:",
@@ -635,12 +703,12 @@ STRINGS = {
     },
     "gcode.another": {
         "en": "Send another command or press Menu:",
-        "de": "Sende einen weiteren Befehl oder drücke Menü:",
+        "de": "Sende einen weiteren Befehl oder drück Menü:",
         "ru": "Отправьте ещё команду или нажмите Меню:",
         "pl": "Wyślij kolejne polecenie lub naciśnij Menu:",
     },
 
-    # ── Macros ───────────────────────────────────────────────────────────
+    # ── Macros ────────────────────────────────────────────────────────────────────
     "macros.title": {
         "en": "⚡ *Macros* ({count} found)\n\nTap to run:",
         "de": "⚡ *Makros* ({count} gefunden)\n\nTippe zum Ausführen:",
@@ -665,8 +733,204 @@ STRINGS = {
         "ru": "✅ Запустить",
         "pl": "✅ Uruchom",
     },
+    "macros.page": {
+        "en": "⚡ *Macros* — Page {page}/{total} ({count} total)",
+        "de": "⚡ *Makros* — Seite {page}/{total} ({count} gesamt)",
+        "ru": "⚡ *Макросы* — Стр. {page}/{total} ({count} всего)",
+        "pl": "⚡ *Makra* — Strona {page}/{total} ({count} łącznie)",
+    },
 
-    # ── System ───────────────────────────────────────────────────────────
+    # ── Adjust controls ──────────────────────────────────────────────────────────────────
+    "adjust.title": {
+        "en": "🔧 *Adjustments*",
+        "de": "🔧 *Anpassungen*",
+        "ru": "🔧 *Настройки печати*",
+        "pl": "🔧 *Dostosowania*",
+    },
+    "adjust.speed": {
+        "en": "⚡ Speed: {val}%",
+        "de": "⚡ Geschwindigkeit: {val}%",
+        "ru": "⚡ Скорость: {val}%",
+        "pl": "⚡ Prędkość: {val}%",
+    },
+    "adjust.flow": {
+        "en": "💧 Flow: {val}%",
+        "de": "💧 Fluss: {val}%",
+        "ru": "💧 Поток: {val}%",
+        "pl": "💧 Przepływ: {val}%",
+    },
+    "adjust.fan": {
+        "en": "🌀 Fan: {val}%",
+        "de": "🌀 Lüfter: {val}%",
+        "ru": "🌀 Вентилятор: {val}%",
+        "pl": "🌀 Wentylator: {val}%",
+    },
+    "adjust.z_offset": {
+        "en": "📐 Z-Offset: {val}mm",
+        "de": "📐 Z-Offset: {val}mm",
+        "ru": "📐 Z-смещение: {val}мм",
+        "pl": "📐 Z-Offset: {val}mm",
+    },
+    "adjust.btn": {
+        "en": "🔧 Adjust",
+        "de": "🔧 Anpassen",
+        "ru": "🔧 Настройка",
+        "pl": "🔧 Dostosuj",
+    },
+    "adjust.speed_set": {
+        "en": "Speed set to {val}%",
+        "de": "Geschwindigkeit auf {val}% gesetzt",
+        "ru": "Скорость установлена: {val}%",
+        "pl": "Prędkość ustawiona na {val}%",
+    },
+    "adjust.flow_set": {
+        "en": "Flow set to {val}%",
+        "de": "Fluss auf {val}% gesetzt",
+        "ru": "Поток установлен: {val}%",
+        "pl": "Przepływ ustawiony na {val}%",
+    },
+    "adjust.fan_set": {
+        "en": "Fan set to {val}%",
+        "de": "Lüfter auf {val}% gesetzt",
+        "ru": "Вентилятор установлен: {val}%",
+        "pl": "Wentylator ustawiony na {val}%",
+    },
+    "adjust.z_up": {
+        "en": "📐 Z+{step}",
+        "de": "📐 Z+{step}",
+        "ru": "📐 Z+{step}",
+        "pl": "📐 Z+{step}",
+    },
+    "adjust.z_down": {
+        "en": "📐 Z-{step}",
+        "de": "📐 Z-{step}",
+        "ru": "📐 Z-{step}",
+        "pl": "📐 Z-{step}",
+    },
+    "adjust.z_reset": {
+        "en": "📐 Z Reset",
+        "de": "📐 Z Zurücksetzen",
+        "ru": "📐 Z Сброс",
+        "pl": "📐 Z Reset",
+    },
+
+    # ── Bed Mesh ─────────────────────────────────────────────────────────────────────
+    "mesh.title": {
+        "en": "📐 *Bed Mesh*",
+        "de": "📐 *Bett-Mesh*",
+        "ru": "📐 *Сетка стола*",
+        "pl": "📐 *Siatka stołu*",
+    },
+    "mesh.no_data": {
+        "en": "No bed mesh data available.",
+        "de": "Keine Bett-Mesh-Daten verfügbar.",
+        "ru": "Данные сетки стола недоступны.",
+        "pl": "Brak danych siatki stołu.",
+    },
+    "mesh.name": {
+        "en": "Profile: {name}",
+        "de": "Profil: {name}",
+        "ru": "Профиль: {name}",
+        "pl": "Profil: {name}",
+    },
+    "mesh.range": {
+        "en": "Range: {min}mm — {max}mm",
+        "de": "Bereich: {min}mm — {max}mm",
+        "ru": "Диапазон: {min}мм — {max}мм",
+        "pl": "Zakres: {min}mm — {max}mm",
+    },
+    "mesh.btn": {
+        "en": "📐 Bed Mesh",
+        "de": "📐 Bett-Mesh",
+        "ru": "📐 Сетка стола",
+        "pl": "📐 Siatka stołu",
+    },
+
+    # ── History ──────────────────────────────────────────────────────────────────────
+    "history.title": {
+        "en": "📜 *Print History*",
+        "de": "📜 *Druckverlauf*",
+        "ru": "📜 *История печати*",
+        "pl": "📜 *Historia druku*",
+    },
+    "history.empty": {
+        "en": "No print history available.",
+        "de": "Kein Druckverlauf vorhanden.",
+        "ru": "История печати недоступна.",
+        "pl": "Brak historii druku.",
+    },
+    "history.entry": {
+        "en": "{status} `{filename}`\n  ⏱️ {duration} | {date}",
+        "de": "{status} `{filename}`\n  ⏱️ {duration} | {date}",
+        "ru": "{status} `{filename}`\n  ⏱️ {duration} | {date}",
+        "pl": "{status} `{filename}`\n  ⏱️ {duration} | {date}",
+    },
+    "history.btn": {
+        "en": "📜 History",
+        "de": "📜 Verlauf",
+        "ru": "📜 История",
+        "pl": "📜 Historia",
+    },
+
+    # ── Notifications ──────────────────────────────────────────────────────────────────
+    "notif.complete": {
+        "en": "✅ *Print Complete!*\n\nFile: `{filename}`\nDuration: {duration}\nFilament: {filament} m",
+        "de": "✅ *Druck fertig!*\n\nDatei: `{filename}`\nDauer: {duration}\nFilament: {filament} m",
+        "ru": "✅ *Печать завершена!*\n\nФайл: `{filename}`\nДлительность: {duration}\nФиламент: {filament} м",
+        "pl": "✅ *Druk ukończony!*\n\nPlik: `{filename}`\nCzas: {duration}\nFilament: {filament} m",
+    },
+    "notif.error": {
+        "en": "🔴 *Print Error!*\n\nFile: `{filename}`\nError: {error}",
+        "de": "🔴 *Druckfehler!*\n\nDatei: `{filename}`\nFehler: {error}",
+        "ru": "🔴 *Ошибка печати!*\n\nФайл: `{filename}`\nОшибка: {error}",
+        "pl": "🔴 *Błąd druku!*\n\nPlik: `{filename}`\nBłąd: {error}",
+    },
+    "notif.started": {
+        "en": "🖨️ *Print Started*\n\nFile: `{filename}`",
+        "de": "🖨️ *Druck gestartet*\n\nDatei: `{filename}`",
+        "ru": "🖨️ *Печать начата*\n\nФайл: `{filename}`",
+        "pl": "🖨️ *Druk rozpoczęty*\n\nPlik: `{filename}`",
+    },
+    "notif.cancelled": {
+        "en": "🟠 *Print Cancelled*\n\nFile: `{filename}`",
+        "de": "🟠 *Druck abgebrochen*\n\nDatei: `{filename}`",
+        "ru": "🟠 *Печать отменена*\n\nФайл: `{filename}`",
+        "pl": "🟠 *Druk anulowany*\n\nPlik: `{filename}`",
+    },
+    "notif.temp_alert": {
+        "en": "🌡️ *Temp Alert!*\n\nHotend: {temp}°C (threshold: {threshold}°C)",
+        "de": "🌡️ *Temperatur-Alarm!*\n\nHotend: {temp}°C (Schwelle: {threshold}°C)",
+        "ru": "🌡️ *Тревога температуры!*\n\nХотэнд: {temp}°C (порог: {threshold}°C)",
+        "pl": "🌡️ *Alarm temperatury!*\n\nHotend: {temp}°C (próg: {threshold}°C)",
+    },
+    "notif.filament_runout": {
+        "en": "🔴 *Filament Runout Detected!*\n\nThe filament sensor triggered — printer should be paused.\nCheck the printer immediately!",
+        "de": "🔴 *Filament leer!*\n\nDer Filament-Sensor hat ausgelöst — Drucker sollte pausiert sein.\nPrüfe den Drucker sofort!",
+        "ru": "🔴 *Обнаружен конец филамента!*\n\nСработал датчик филамента — принтер должен быть на паузе.\nПроверьте принтер немедленно!",
+        "pl": "🔴 *Wykryto brak filamentu!*\n\nCzujnik filamentu się uruchomił — drukarka powinna być wstrzymana.\nSprawdź drukarkę natychmiast!",
+    },
+    "notif.milestone": {
+        "en": "📊 *Print Progress: {pct}%*\n\nFile: `{filename}`",
+        "de": "📊 *Druckfortschritt: {pct}%*\n\nDatei: `{filename}`",
+        "ru": "📊 *Прогресс печати: {pct}%*\n\nФайл: `{filename}`",
+        "pl": "📊 *Postęp druku: {pct}%*\n\nPlik: `{filename}`",
+    },
+
+    # ── Printers (multi-printer) ─────────────────────────────────────────────────────────────────
+    "printers.title": {
+        "en": "🖨️ *Select Printer*\n\nTap to switch:",
+        "de": "🖨️ *Drucker auswählen*\n\nTippe zum Wechseln:",
+        "ru": "🖨️ *Выбор принтера*\n\nНажмите для переключения:",
+        "pl": "🖨️ *Wybierz drukarkę*\n\nKliknij, aby przełączyć:",
+    },
+    "printers.overview": {
+        "en": "🖨️ *All Printers*",
+        "de": "🖨️ *Alle Drucker*",
+        "ru": "🖨️ *Все принтеры*",
+        "pl": "🖨️ *Wszystkie drukarki*",
+    },
+
+    # ── System ─────────────────────────────────────────────────────────────────────
     "system.title": {
         "en": "🔧 *System Info*",
         "de": "🔧 *Systeminfo*",
@@ -698,7 +962,7 @@ STRINGS = {
         "pl": "🔁 *Restart hosta?*\n\nSystem hosta drukarki zostanie zrestartowany.",
     },
 
-    # ── Emergency Stop ───────────────────────────────────────────────────
+    # ── Emergency Stop ───────────────────────────────────────────────────────────────────
     "estop.confirm": {
         "en": "🚨 *EMERGENCY STOP*\n\nThis will IMMEDIATELY halt the printer.\nYou will need to restart firmware after.\n\nAre you sure?",
         "de": "🚨 *NOT-HALT*\n\nDer Drucker wird SOFORT gestoppt.\nDanach muss die Firmware neu gestartet werden.\n\nBist du sicher?",
@@ -724,7 +988,7 @@ STRINGS = {
         "pl": "❌ Zatrzymanie awaryjne nie powiodło się! Sprawdź połączenie.",
     },
 
-    # ── Settings ─────────────────────────────────────────────────────────
+    # ── Settings ────────────────────────────────────────────────────────────────────
     "settings.title": {
         "en": "⚙️ *Settings*\n\nTap to toggle or cycle values:",
         "de": "⚙️ *Einstellungen*\n\nTippe zum Umschalten:",
@@ -761,11 +1025,11 @@ STRINGS = {
         "ru": "Конец филамента",
         "pl": "Brak filamentu",
     },
-    "settings.printer_offline": {
-        "en": "Printer Offline",
-        "de": "Drucker offline",
-        "ru": "Принтер не в сети",
-        "pl": "Drukarka offline",
+    "settings.progress_milestone": {
+        "en": "Progress Milestones",
+        "de": "Fortschritts-Meilensteine",
+        "ru": "Уведомления о прогрессе",
+        "pl": "Kamienie milowe postępu",
     },
     "settings.temp_alert": {
         "en": "Temp Alert",
@@ -804,71 +1068,7 @@ STRINGS = {
         "pl": "🌐 Język: Polski",
     },
 
-    # ── Notifications ────────────────────────────────────────────────────
-    "notif.complete": {
-        "en": "✅ *Print Complete!*\n\nFile: `{filename}`\nDuration: {duration}\nFilament: {filament} m",
-        "de": "✅ *Druck fertig!*\n\nDatei: `{filename}`\nDauer: {duration}\nFilament: {filament} m",
-        "ru": "✅ *Печать завершена!*\n\nФайл: `{filename}`\nДлительность: {duration}\nФиламент: {filament} м",
-        "pl": "✅ *Druk ukończony!*\n\nPlik: `{filename}`\nCzas: {duration}\nFilament: {filament} m",
-    },
-    "notif.error": {
-        "en": "🔴 *Print Error!*\n\nFile: `{filename}`\nError: {error}",
-        "de": "🔴 *Druckfehler!*\n\nDatei: `{filename}`\nFehler: {error}",
-        "ru": "🔴 *Ошибка печати!*\n\nФайл: `{filename}`\nОшибка: {error}",
-        "pl": "🔴 *Błąd druku!*\n\nPlik: `{filename}`\nBłąd: {error}",
-    },
-    "notif.started": {
-        "en": "🖨️ *Print Started*\n\nFile: `{filename}`",
-        "de": "🖨️ *Druck gestartet*\n\nDatei: `{filename}`",
-        "ru": "🖨️ *Печать начата*\n\nФайл: `{filename}`",
-        "pl": "🖨️ *Druk rozpoczęty*\n\nPlik: `{filename}`",
-    },
-    "notif.cancelled": {
-        "en": "🟠 *Print Cancelled*\n\nFile: `{filename}`",
-        "de": "🟠 *Druck abgebrochen*\n\nDatei: `{filename}`",
-        "ru": "🟠 *Печать отменена*\n\nФайл: `{filename}`",
-        "pl": "🟠 *Druk anulowany*\n\nPlik: `{filename}`",
-    },
-    "notif.temp_alert": {
-        "en": "🌡️ *Temp Alert!*\n\nHotend: {temp}°C (threshold: {threshold}°C)",
-        "de": "🌡️ *Temperatur-Alarm!*\n\nHotend: {temp}°C (Schwelle: {threshold}°C)",
-        "ru": "🌡️ *Тревога температуры!*\n\nХотэнд: {temp}°C (порог: {threshold}°C)",
-        "pl": "🌡️ *Alarm temperatury!*\n\nHotend: {temp}°C (próg: {threshold}°C)",
-    },
-    "notif.filament_runout": {
-        "en": "🔴 *Filament Runout Detected!*\n\nThe filament sensor triggered — printer should be paused.\nCheck the printer immediately!",
-        "de": "🔴 *Filament leer!*\n\nDer Filament-Sensor hat ausgelöst — Drucker sollte pausiert sein.\nPrüfe den Drucker sofort!",
-        "ru": "🔴 *Обнаружен конец филамента!*\n\nСработал датчик филамента — принтер должен быть на паузе.\nПроверьте принтер немедленно!",
-        "pl": "🔴 *Wykryto brak filamentu!*\n\nCzujnik filamentu się uruchomił — drukarka powinna być wstrzymana.\nSprawdź drukarkę natychmiast!",
-    },
-    "notif.offline": {
-        "en": "⚫ *Printer Offline*{name}\n\nCannot reach the printer. Check if it's powered on and connected.",
-        "de": "⚫ *Drucker offline*{name}\n\nDrucker nicht erreichbar. Prüfe ob er eingeschaltet und verbunden ist.",
-        "ru": "⚫ *Принтер не в сети*{name}\n\nНет связи с принтером. Проверьте питание и подключение.",
-        "pl": "⚫ *Drukarka offline*{name}\n\nNie można połączyć się z drukarką. Sprawdź zasilanie i połączenie.",
-    },
-    "notif.online": {
-        "en": "🟢 *Printer Online*{name}\n\nPrinter is back and responding.",
-        "de": "🟢 *Drucker online*{name}\n\nDrucker ist wieder erreichbar.",
-        "ru": "🟢 *Принтер в сети*{name}\n\nПринтер снова доступен.",
-        "pl": "🟢 *Drukarka online*{name}\n\nDrukarka jest z powrotem dostępna.",
-    },
-
-    # ── Printers (multi-printer) ─────────────────────────────────────────
-    "printers.title": {
-        "en": "🖨️ *Select Printer*\n\nTap to switch:",
-        "de": "🖨️ *Drucker auswählen*\n\nTippe zum Wechseln:",
-        "ru": "🖨️ *Выбор принтера*\n\nНажмите для переключения:",
-        "pl": "🖨️ *Wybierz drukarkę*\n\nKliknij, aby przełączyć:",
-    },
-    "printers.overview": {
-        "en": "🖨️ *All Printers*",
-        "de": "🖨️ *Alle Drucker*",
-        "ru": "🖨️ *Все принтеры*",
-        "pl": "🖨️ *Wszystkie drukarki*",
-    },
-
-    # ── Generic ──────────────────────────────────────────────────────────
+    # ── Generic ──────────────────────────────────────────────────────────────────────
     "generic.failed": {
         "en": "❌ Failed",
         "de": "❌ Fehlgeschlagen",
