@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import get as cfg, lang, save as save_cfg
 from lang import t
-from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, short_name, printer_badge
+from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, short_name, printer_badge, offline_guard
 import api
 
 
@@ -16,6 +16,9 @@ async def cb_files(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     L = lang()
     user_id = uid(update)
+
+    if await offline_guard(q, user_id):
+        return
 
     page = 0
     if q.data.startswith("files:page:"):
@@ -79,7 +82,7 @@ async def cb_file_sort(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     sort_by = q.data.split(":")[2]
     cfg().setdefault("files", {})["sort_by"] = sort_by
     save_cfg()
-    await q.answer(f"{'📅' if sort_by == 'modified' else '🔤'}")
+    await q.answer(f"{'\ud83d\udcc5' if sort_by == 'modified' else '\ud83d\udd24'}")
     q.data = "files:page:0"
     await cb_files(update, ctx)
 
