@@ -108,12 +108,13 @@ async def snapshot(user_id: int | None = None) -> bytes | None:
     return None
 
 
-# ── High-level queries ───────────────────────────────────────────────────────
+# ── High-level queries ────────────────────────────────────────────────────────────────────────
 
 async def printer_status(user_id: int | None = None) -> dict | None:
-    """Get print stats, progress, and temperatures in one call."""
+    """Get print stats, progress, temperatures, gcode_move and fan in one call."""
     data = await get(
-        "/printer/objects/query?print_stats&display_status&virtual_sdcard&extruder&heater_bed",
+        "/printer/objects/query?print_stats&display_status&virtual_sdcard"
+        "&extruder&heater_bed&gcode_move&fan",
         user_id=user_id,
     )
     if not data:
@@ -194,3 +195,42 @@ async def system_info(user_id: int | None = None) -> dict | None:
 async def proc_stats(user_id: int | None = None) -> dict | None:
     data = await get("/machine/proc_stats", user_id=user_id)
     return data.get("result") if data else None
+
+
+# ── New endpoints ─────────────────────────────────────────────────────────────────────────────
+
+async def print_history(limit: int = 20, user_id: int | None = None) -> list[dict]:
+    """Get print history from Moonraker history API."""
+    data = await get(f"/server/history/list?limit={limit}&order=desc", user_id=user_id)
+    if not data:
+        return []
+    return data.get("result", {}).get("jobs", [])
+
+
+async def bed_mesh_status(user_id: int | None = None) -> dict | None:
+    """Get bed mesh profile data."""
+    data = await get("/printer/objects/query?bed_mesh", user_id=user_id)
+    if not data:
+        return None
+    return data.get("result", {}).get("status", {}).get("bed_mesh")
+
+
+async def set_speed_factor(pct: int, user_id: int | None = None) -> str | None:
+    return await gcode(f"M220 S{pct}", user_id=user_id)
+
+
+async def set_flow_factor(pct: int, user_id: int | None = None) -> str | None:
+    return await gcode(f"M221 S{pct}", user_id=user_id)
+
+
+async def set_fan_speed(pct: int, user_id: int | None = None) -> str | None:
+    val = int(255 * pct / 100)
+    return await gcode(f"M106 S{val}", user_id=user_id)
+
+
+async def adjust_z_offset(offset: float, user_id: int | None = None) -> str | None:
+    return await gcode(f"SET_GCODE_OFFSET Z_ADJUST={offset:.3f} MOVE=1", user_id=user_id)
+
+
+async def reset_z_offset(user_id: int | None = None) -> str | None:
+    return await gcode("SET_GCODE_OFFSET Z=0 MOVE=1", user_id=user_id)
