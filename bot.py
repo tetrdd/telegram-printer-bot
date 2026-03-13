@@ -25,7 +25,7 @@ from telegram.ext import (
 import config
 from monitor import PrintMonitor
 
-# ── Logging ──────────────────────────────────────────────────────────────────
+# ── Logging ────────────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=logging.INFO,
@@ -40,7 +40,7 @@ def main():
 
     app = Application.builder().token(token).build()
 
-    # ── Import handlers ──────────────────────────────────────────────────
+    # ── Import handlers ────────────────────────────────────────────────────────────────
     from handlers.menu import cmd_start, cmd_menu, cb_menu_router
     from handlers.status import cb_status, cb_toggle_auto
     from handlers.temps import (
@@ -61,8 +61,11 @@ def main():
     from handlers.estop import cb_estop, cb_estop_confirm
     from handlers.settings import cb_settings, cb_setting_toggle
     from handlers.printers import cb_printers, cb_printer_select, cb_printer_status_all
+    from handlers.adjust import cb_adjust, cb_adjust_speed, cb_adjust_flow, cb_adjust_fan, cb_adjust_z
+    from handlers.bed_mesh import cb_bed_mesh
+    from handlers.history import cb_history, cb_history_page
 
-    # ── Conversation handlers (registered first for priority) ────────────
+    # ── Conversation handlers (registered first for priority) ────────────────────────
     gcode_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_gcode_entry, pattern=r"^menu:gcode$")],
         states={
@@ -113,12 +116,12 @@ def main():
     app.add_handler(temp_hotend_conv)
     app.add_handler(temp_bed_conv)
 
-    # ── Commands ─────────────────────────────────────────────────────────
+    # ── Commands ───────────────────────────────────────────────────────────────
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("menu", cmd_menu))
     app.add_handler(CommandHandler("help", cmd_start))
 
-    # ── Callback queries ─────────────────────────────────────────────────
+    # ── Callback queries ─────────────────────────────────────────────────────────────
     # Menu router (catches all menu:* except gcode which is handled by conv)
     app.add_handler(CallbackQueryHandler(cb_menu_router, pattern=r"^menu:"))
 
@@ -151,6 +154,7 @@ def main():
     # Macros
     app.add_handler(CallbackQueryHandler(cb_macro_ask, pattern=r"^macro:run_ask:"))
     app.add_handler(CallbackQueryHandler(cb_macro_run, pattern=r"^macro:run:"))
+    app.add_handler(CallbackQueryHandler(cb_macros, pattern=r"^macros:page:"))
 
     # System
     app.add_handler(CallbackQueryHandler(cb_sys_action, pattern=r"^sys:(fw_restart|host_restart)$"))
@@ -163,10 +167,19 @@ def main():
     app.add_handler(CallbackQueryHandler(cb_printer_select, pattern=r"^printer:select:"))
     app.add_handler(CallbackQueryHandler(cb_printer_status_all, pattern=r"^printer:status_all$"))
 
+    # Adjust
+    app.add_handler(CallbackQueryHandler(cb_adjust_speed, pattern=r"^adjust:speed:"))
+    app.add_handler(CallbackQueryHandler(cb_adjust_flow, pattern=r"^adjust:flow:"))
+    app.add_handler(CallbackQueryHandler(cb_adjust_fan, pattern=r"^adjust:fan:"))
+    app.add_handler(CallbackQueryHandler(cb_adjust_z, pattern=r"^adjust:z:"))
+
+    # History
+    app.add_handler(CallbackQueryHandler(cb_history_page, pattern=r"^history:page:"))
+
     # Settings (must be last — catches all set:* patterns)
     app.add_handler(CallbackQueryHandler(cb_setting_toggle, pattern=r"^set:"))
 
-    # ── Lifecycle hooks ──────────────────────────────────────────────────
+    # ── Lifecycle hooks ───────────────────────────────────────────────────────────────
     async def post_init(application: Application):
         # Set bot command menu
         await application.bot.set_my_commands([
