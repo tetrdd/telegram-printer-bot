@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import get as cfg, lang, save as save_cfg
 from lang import t
-from helpers import auth_cb, btn, fmt_size, fmt_duration, short_name
+from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, short_name, printer_badge
 import api
 
 
@@ -15,12 +15,13 @@ async def cb_files(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
     page = 0
     if q.data.startswith("files:page:"):
         page = int(q.data.split(":")[2])
 
-    files = await api.file_list()
+    files = await api.file_list(user_id=user_id)
     if not files:
         await q.edit_message_text(
             t("files.empty", L),
@@ -39,7 +40,7 @@ async def cb_files(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     page = max(0, min(page, total_pages - 1))
     page_files = files[page * per_page : (page + 1) * per_page]
 
-    lines = [t("files.title", L).format(page=page + 1, total=total_pages) + "\n"]
+    lines = [f"{printer_badge(user_id)}{t('files.title', L).format(page=page + 1, total=total_pages)}\n"]
     buttons = []
     for i, f in enumerate(page_files):
         name = f.get("path", "unknown")
@@ -89,8 +90,9 @@ async def cb_file_info(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     filename = q.data[len("file:info:"):]
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
-    meta = await api.file_metadata(filename)
+    meta = await api.file_metadata(filename, user_id=user_id)
     if not meta:
         await q.edit_message_text(
             f"❌ `{filename}`",
@@ -150,12 +152,13 @@ async def cb_file_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     filename = q.data[len("file:start:"):]
     L = lang()
+    user_id = uid(update)
 
-    ok = await api.start_print(filename)
+    ok = await api.start_print(filename, user_id=user_id)
     await q.answer(t("files.started", L) if ok else t("generic.failed", L), show_alert=True)
 
     from handlers.menu import show_menu
-    await show_menu(q)
+    await show_menu(q, user_id)
 
 
 @auth_cb
@@ -179,8 +182,9 @@ async def cb_file_delete(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     filename = q.data[len("file:delete:"):]
     L = lang()
+    user_id = uid(update)
 
-    ok = await api.delete_file(filename)
+    ok = await api.delete_file(filename, user_id=user_id)
     await q.answer(t("files.deleted", L) if ok else t("generic.failed", L), show_alert=True)
     q.data = "menu:files"
     await cb_files(update, ctx)

@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 from config import get as cfg, lang
 from lang import t
-from helpers import auth, auth_cb, btn, grid
+from helpers import auth, auth_cb, btn, uid, grid, printer_badge
 import api
 
 # Conversation states
@@ -18,8 +18,9 @@ async def cb_temps(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
-    data = await api.get("/printer/objects/query?extruder&heater_bed")
+    data = await api.get("/printer/objects/query?extruder&heater_bed", user_id=user_id)
     if not data:
         await q.edit_message_text(
             t("err.no_connect", L),
@@ -32,6 +33,7 @@ async def cb_temps(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     bed = res.get("heater_bed", {})
 
     text = (
+        f"{printer_badge(user_id)}"
         f"{t('temps.title', L)}\n\n"
         f"{t('status.hotend', L)}: *{ext.get('temperature', 0):.1f}°C* → {ext.get('target', 0):.0f}°C\n"
         f"  {t('temps.power', L)}: {ext.get('power', 0) * 100:.0f}%\n\n"
@@ -75,11 +77,12 @@ async def cb_set_temp(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     _, heater, temp_str = q.data.split(":")
     temp = int(temp_str)
+    user_id = uid(update)
 
     if heater == "hotend":
-        r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}")
+        r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}", user_id=user_id)
     else:
-        r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}")
+        r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}", user_id=user_id)
 
     label = t("status.hotend", lang()) if heater == "hotend" else t("status.bed", lang())
     await q.answer(f"{label} → {temp}°C {'✓' if r else '✗'}", show_alert=True)
@@ -89,8 +92,9 @@ async def cb_set_temp(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 @auth_cb
 async def cb_cool_all(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await api.gcode("SET_HEATER_TEMPERATURE HEATER=extruder TARGET=0")
-    await api.gcode("SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET=0")
+    user_id = uid(update)
+    await api.gcode("SET_HEATER_TEMPERATURE HEATER=extruder TARGET=0", user_id=user_id)
+    await api.gcode("SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET=0", user_id=user_id)
     await q.answer(t("temps.cooled", lang()), show_alert=True)
     await cb_temps(update, ctx)
 
@@ -116,6 +120,7 @@ async def cb_temp_custom_bed(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 @auth
 async def handle_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     L = lang()
+    user_id = uid(update)
     try:
         temp = int(update.message.text.strip())
         if not 0 <= temp <= 300:
@@ -124,7 +129,7 @@ async def handle_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(t("temps.invalid_hotend", L))
         return TEMP_CUSTOM_HOTEND
 
-    r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}")
+    r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}", user_id=user_id)
     msg = f"🔥 {t('status.hotend', L)} → {temp}°C {'✓' if r else '✗'}"
     await update.message.reply_text(
         msg,
@@ -136,6 +141,7 @@ async def handle_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 @auth
 async def handle_custom_bed(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     L = lang()
+    user_id = uid(update)
     try:
         temp = int(update.message.text.strip())
         if not 0 <= temp <= 120:
@@ -144,7 +150,7 @@ async def handle_custom_bed(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(t("temps.invalid_bed", L))
         return TEMP_CUSTOM_BED
 
-    r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}")
+    r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}", user_id=user_id)
     msg = f"🛏️ {t('status.bed', L)} → {temp}°C {'✓' if r else '✗'}"
     await update.message.reply_text(
         msg,

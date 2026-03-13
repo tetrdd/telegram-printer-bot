@@ -41,6 +41,10 @@ def _settings_keyboard() -> InlineKeyboardMarkup:
             "set:notifications.on_filament_runout",
         )],
         [btn(
+            f"{tog(notif.get('on_printer_offline', True))} {t('settings.printer_offline', L)}",
+            "set:notifications.on_printer_offline",
+        )],
+        [btn(
             f"🌡️ {t('settings.temp_alert', L)}: {notif.get('temp_alert_threshold', 0)}°C",
             "set:cycle_temp_alert",
         )],
@@ -127,7 +131,7 @@ async def cb_setting_toggle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
 
     if key_path == "cycle_lang":
-        options = ["en", "de", "ru"]
+        options = ["en", "de", "ru", "pl"]
         current = lang()
         try:
             idx = options.index(current)
@@ -135,7 +139,7 @@ async def cb_setting_toggle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             new = "en"
         set_lang(new)
-        labels = {"en": "English", "de": "Deutsch", "ru": "Русский"}
+        labels = {"en": "English", "de": "Deutsch", "ru": "Русский", "pl": "Polski"}
         await q.answer(f"🌐 {labels[new]}")
         await cb_settings(update, ctx)
         return

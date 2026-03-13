@@ -60,6 +60,7 @@ def main():
     from handlers.system import cb_system, cb_sys_action, cb_sys_confirm
     from handlers.estop import cb_estop, cb_estop_confirm
     from handlers.settings import cb_settings, cb_setting_toggle
+    from handlers.printers import cb_printers, cb_printer_select, cb_printer_status_all
 
     # ── Conversation handlers (registered first for priority) ────────────
     gcode_conv = ConversationHandler(
@@ -157,6 +158,10 @@ def main():
 
     # Emergency stop
     app.add_handler(CallbackQueryHandler(cb_estop_confirm, pattern=r"^estop:confirm$"))
+
+    # Printers
+    app.add_handler(CallbackQueryHandler(cb_printer_select, pattern=r"^printer:select:"))
+    app.add_handler(CallbackQueryHandler(cb_printer_status_all, pattern=r"^printer:status_all$"))
 
     # Settings (must be last — catches all set:* patterns)
     app.add_handler(CallbackQueryHandler(cb_setting_toggle, pattern=r"^set:"))

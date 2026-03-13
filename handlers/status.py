@@ -8,7 +8,7 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest, TimedOut
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, progress_bar, fmt_duration, state_icon
+from helpers import auth_cb, btn, uid, progress_bar, fmt_duration, state_icon, printer_badge
 import api
 
 logger = logging.getLogger("PrinterBot.status")
@@ -17,7 +17,7 @@ logger = logging.getLogger("PrinterBot.status")
 _auto_refresh_tasks: dict[tuple[int, int], asyncio.Task] = {}
 
 
-def _build_status_text(res: dict) -> str:
+def _build_status_text(res: dict, user_id: int) -> str:
     L = lang()
     stats = res.get("print_stats", {})
     vsd = res.get("virtual_sdcard", {})
@@ -38,6 +38,7 @@ def _build_status_text(res: dict) -> str:
     bar = progress_bar(pct)
 
     return (
+        f"{printer_badge(user_id)}"
         f"{t('status.title', L)}\n\n"
         f"{t('status.state', L)}: {state_icon(state)}\n"
         f"{t('status.file', L)}: `{filename}`\n\n"
@@ -64,8 +65,9 @@ def _status_keyboard(auto_active: bool) -> InlineKeyboardMarkup:
 async def cb_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    user_id = uid(update)
 
-    res = await api.printer_status()
+    res = await api.printer_status(user_id=user_id)
     if not res:
         L = lang()
         await q.edit_message_text(
@@ -77,7 +79,7 @@ async def cb_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     key = (q.message.chat_id, q.message.message_id)
     auto_active = key in _auto_refresh_tasks
 
-    text = _build_status_text(res)
+    text = _build_status_text(res, user_id)
     await q.edit_message_text(
         text,
         reply_markup=_status_keyboard(auto_active),
@@ -89,6 +91,7 @@ async def cb_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def cb_toggle_auto(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    user_id = uid(update)
 
     chat_id = q.message.chat_id
     msg_id = q.message.message_id
@@ -99,31 +102,31 @@ async def cb_toggle_auto(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         _auto_refresh_tasks[key].cancel()
         del _auto_refresh_tasks[key]
         # Refresh once to update the button label
-        res = await api.printer_status()
+        res = await api.printer_status(user_id=user_id)
         if res:
             await q.edit_message_text(
-                _build_status_text(res),
+                _build_status_text(res, user_id),
                 reply_markup=_status_keyboard(False),
                 parse_mode=ParseMode.MARKDOWN,
             )
     else:
         # Start auto-refresh
-        task = asyncio.create_task(_auto_refresh_loop(ctx.bot, chat_id, msg_id))
+        task = asyncio.create_task(_auto_refresh_loop(ctx.bot, chat_id, msg_id, user_id))
         _auto_refresh_tasks[key] = task
 
 
-async def _auto_refresh_loop(bot, chat_id: int, msg_id: int):
+async def _auto_refresh_loop(bot, chat_id: int, msg_id: int, user_id: int):
     """Edits the status message every 5 seconds until stopped."""
     key = (chat_id, msg_id)
     last_text = ""
     try:
         while True:
             await asyncio.sleep(5)
-            res = await api.printer_status()
+            res = await api.printer_status(user_id=user_id)
             if not res:
                 continue
 
-            text = _build_status_text(res)
+            text = _build_status_text(res, user_id)
 
             # Only edit if content actually changed (avoid Telegram API errors)
             if text == last_text:

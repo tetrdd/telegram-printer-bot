@@ -6,7 +6,7 @@ import logging
 from functools import wraps
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from config import allowed_users, lang
+from config import allowed_users, lang, is_multi_printer, active_printer_name
 from lang import t
 
 logger = logging.getLogger("PrinterBot.helpers")
@@ -36,6 +36,15 @@ def auth_cb(func):
             return
         return await func(update, ctx)
     return wrapper
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  USER ID HELPER
+# ══════════════════════════════════════════════════════════════════════════════
+
+def uid(update: Update) -> int:
+    """Extract user ID from any update type."""
+    return update.effective_user.id
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -81,6 +90,14 @@ def short_name(name: str, max_len: int = 30) -> str:
     if len(name) <= max_len:
         return name
     return "..." + name[-(max_len - 3):]
+
+
+def printer_badge(user_id: int) -> str:
+    """Return a printer name badge if multi-printer is enabled."""
+    if is_multi_printer():
+        name = active_printer_name(user_id)
+        return f"🖨️ *{name}*\n"
+    return ""
 
 
 # ══════════════════════════════════════════════════════════════════════════════

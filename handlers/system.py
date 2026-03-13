@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, fmt_size, fmt_duration
+from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, printer_badge
 import api
 
 
@@ -14,12 +14,13 @@ async def cb_system(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
-    info = await api.system_info()
-    proc = await api.proc_stats()
-    server = await api.server_info()
+    info = await api.system_info(user_id=user_id)
+    proc = await api.proc_stats(user_id=user_id)
+    server = await api.server_info(user_id=user_id)
 
-    text = t("system.title", L) + "\n"
+    text = f"{printer_badge(user_id)}{t('system.title', L)}\n"
 
     if server:
         text += f"\nMoonraker: v{server.get('moonraker_version', '?')}"
@@ -48,6 +49,9 @@ async def cb_system(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             flags = throttle.get("flags", [])
             if flags:
                 text += f"\n⚠️ Throttle: {', '.join(flags)}"
+
+    if not server and not info and not proc:
+        text += f"\n\n{t('err.no_connect', L)}"
 
     kb = InlineKeyboardMarkup([
         [btn(t("btn.refresh", L), "menu:system")],
@@ -87,12 +91,13 @@ async def cb_sys_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
     L = lang()
+    user_id = uid(update)
 
     funcs = {"fw_restart": api.firmware_restart, "host_restart": api.host_reboot}
     func = funcs.get(action)
     if func:
-        r = await func()
+        r = await func(user_id=user_id)
         await q.answer(t("generic.done", L) if r else t("generic.failed", L), show_alert=True)
 
     from handlers.menu import show_menu
-    await show_menu(q)
+    await show_menu(q, user_id)

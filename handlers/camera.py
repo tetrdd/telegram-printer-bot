@@ -4,9 +4,10 @@ from io import BytesIO
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from config import get as cfg, lang
+from config import lang
 from lang import t
-from helpers import auth_cb, btn, btn_url
+from helpers import auth_cb, btn, uid, btn_url
+from config import active_camera
 import api
 
 
@@ -15,9 +16,11 @@ async def cb_camera(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
-    snap_url = cfg().get("camera", {}).get("snapshot_url", "")
-    stream_url = cfg().get("camera", {}).get("stream_url", "")
+    cam = active_camera(user_id)
+    snap_url = cam.get("snapshot_url", "")
+    stream_url = cam.get("stream_url", "")
 
     if not snap_url and not stream_url:
         await q.edit_message_text(
@@ -27,7 +30,7 @@ async def cb_camera(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    img = await api.snapshot()
+    img = await api.snapshot(user_id=user_id)
     if img:
         kb_rows = [[btn(t("camera.new_snapshot", L), "action:snapshot")]]
         if stream_url:
@@ -60,10 +63,12 @@ async def cb_snapshot_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer(t("camera.capturing", lang()))
     L = lang()
+    user_id = uid(update)
 
-    img = await api.snapshot()
+    img = await api.snapshot(user_id=user_id)
     if img:
-        stream_url = cfg().get("camera", {}).get("stream_url", "")
+        cam = active_camera(user_id)
+        stream_url = cam.get("stream_url", "")
         kb_rows = [[btn(t("camera.new_snapshot", L), "action:snapshot")]]
         if stream_url:
             kb_rows.append([btn_url(t("camera.stream", L), stream_url)])
@@ -83,8 +88,9 @@ async def cb_snapshot_inline(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Quick snapshot from status dashboard."""
     q = update.callback_query
     await q.answer(t("camera.capturing", lang()))
+    user_id = uid(update)
 
-    img = await api.snapshot()
+    img = await api.snapshot(user_id=user_id)
     if img:
         await q.message.reply_photo(photo=BytesIO(img), caption=t("camera.snapshot", lang()))
     else:

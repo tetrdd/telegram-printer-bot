@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, state_icon
+from helpers import auth_cb, btn, uid, state_icon, printer_badge
 import api
 
 
@@ -14,8 +14,9 @@ async def cb_print_ctrl(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
-    data = await api.get("/printer/objects/query?print_stats")
+    data = await api.get("/printer/objects/query?print_stats", user_id=user_id)
     state = "unknown"
     if data:
         state = data.get("result", {}).get("status", {}).get("print_stats", {}).get("state", "unknown")
@@ -34,7 +35,7 @@ async def cb_print_ctrl(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     buttons.append([btn(t("btn.back_menu", L), "menu:main")])
 
     await q.edit_message_text(
-        f"{t('ctrl.title', L)}\n\n{t('status.state', L)}: {state_icon(state)}",
+        f"{printer_badge(user_id)}{t('ctrl.title', L)}\n\n{t('status.state', L)}: {state_icon(state)}",
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN,
     )
@@ -45,6 +46,7 @@ async def cb_ctrl_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
     L = lang()
+    user_id = uid(update)
 
     actions = {
         "pause": (api.pause_print, t("ctrl.paused", L)),
@@ -56,11 +58,11 @@ async def cb_ctrl_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     func, msg = actions.get(action, (None, None))
     if func:
         if action == "home":
-            r = await func("G28")
+            r = await func("G28", user_id=user_id)
         elif action == "motors_off":
-            r = await func("M84")
+            r = await func("M84", user_id=user_id)
         else:
-            r = await func()
+            r = await func(user_id=user_id)
         await q.answer(msg if r else t("generic.failed", L), show_alert=True)
 
     await cb_print_ctrl(update, ctx)
@@ -86,9 +88,10 @@ async def cb_ctrl_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
     L = lang()
+    user_id = uid(update)
 
     if action == "cancel":
-        r = await api.cancel_print()
+        r = await api.cancel_print(user_id=user_id)
         await q.answer(t("ctrl.cancelled", L) if r else t("generic.failed", L), show_alert=True)
     else:
         await q.answer("👍")

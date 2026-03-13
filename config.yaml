@@ -7,6 +7,33 @@ telegram:
   allowed_user_ids:
     - 123456789
 
+# ── Printers ──────────────────────────────────────────────────────────────────
+# Single printer (simple):
+#   moonraker:
+#     url: "http://192.168.1.100:7125"
+#     api_key: ""
+#   camera:
+#     snapshot_url: ""
+#     stream_url: ""
+#
+# Multiple printers:
+#   printers:
+#     - name: "Neptune"
+#       moonraker:
+#         url: "http://192.168.1.100:7125"
+#         api_key: ""
+#       camera:
+#         snapshot_url: ""
+#         stream_url: ""
+#     - name: "Ender 3"
+#       moonraker:
+#         url: "http://192.168.1.101:7125"
+#         api_key: ""
+#       camera:
+#         snapshot_url: "http://192.168.1.101/webcam/?action=snapshot"
+#         stream_url: ""
+# ──────────────────────────────────────────────────────────────────────────────
+
 moonraker:
   url: "http://192.168.1.100:7125"
   api_key: ""
@@ -15,7 +42,7 @@ camera:
   snapshot_url: ""
   stream_url: ""
 
-language: "en"  # "en", "de", or "ru"
+language: "en"  # "en", "de", "ru", or "pl"
 
 
 notifications:
@@ -24,6 +51,7 @@ notifications:
   on_print_start: true
   on_print_cancelled: true
   on_filament_runout: true
+  on_printer_offline: true
   temp_alert_threshold: 0
 
 monitoring:

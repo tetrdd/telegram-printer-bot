@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, grid
+from helpers import auth_cb, btn, uid, grid
 import api
 
 
@@ -14,8 +14,9 @@ async def cb_macros(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
-    objects = await api.printer_objects()
+    objects = await api.printer_objects(user_id=user_id)
     macros = sorted([
         obj.replace("gcode_macro ", "")
         for obj in objects
@@ -61,7 +62,8 @@ async def cb_macro_ask(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def cb_macro_run(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     macro = q.data[len("macro:run:"):]
+    user_id = uid(update)
 
-    r = await api.gcode(macro)
+    r = await api.gcode(macro, user_id=user_id)
     await q.answer(f"{'✅' if r else '❌'} {macro}", show_alert=True)
     await cb_macros(update, ctx)

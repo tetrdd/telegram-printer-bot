@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import get as cfg, lang
 from lang import t
-from helpers import auth_cb, btn
+from helpers import auth_cb, btn, uid
 import api
 
 
@@ -14,6 +14,7 @@ async def cb_estop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
+    user_id = uid(update)
 
     if cfg().get("safety", {}).get("emergency_stop_confirm", True):
         await q.edit_message_text(
@@ -25,7 +26,7 @@ async def cb_estop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.MARKDOWN,
         )
     else:
-        ok = await api.emergency_stop()
+        ok = await api.emergency_stop(user_id=user_id)
         if ok:
             await q.edit_message_text(
                 t("estop.done", L),
@@ -46,8 +47,9 @@ async def cb_estop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def cb_estop_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     L = lang()
+    user_id = uid(update)
 
-    ok = await api.emergency_stop()
+    ok = await api.emergency_stop(user_id=user_id)
     if ok:
         await q.answer("🚨", show_alert=True)
         await q.edit_message_text(
@@ -61,4 +63,4 @@ async def cb_estop_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     else:
         await q.answer(t("estop.failed", L), show_alert=True)
         from handlers.menu import show_menu
-        await show_menu(q)
+        await show_menu(q, user_id)
