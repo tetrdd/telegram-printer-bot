@@ -1,0 +1,55 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  Telegram Printer Bot — Configuration
+# ══════════════════════════════════════════════════════════════════════════════
+
+telegram:
+  bot_token: "YOUR_BOT_TOKEN_HERE"
+  allowed_user_ids:
+    - 123456789
+
+moonraker:
+  url: "http://192.168.1.100:7125"
+  api_key: ""
+
+camera:
+  snapshot_url: ""
+  stream_url: ""
+
+language: "en"  # "en", "de", or "ru"
+
+
+notifications:
+  on_print_complete: true
+  on_print_error: true
+  on_print_start: true
+  on_print_cancelled: true
+  on_filament_runout: true
+  temp_alert_threshold: 0
+
+monitoring:
+  poll_interval: 10
+
+safety:
+  emergency_stop_enabled: true
+  emergency_stop_confirm: true
+
+files:
+  files_per_page: 5
+  sort_by: "modified"
+  sort_order: "desc"
+
+temp_presets:
+  hotend:
+    PLA: 200
+    PETG: 230
+    ABS: 245
+    TPU: 220
+    Nylon: 260
+    "Cool Down": 0
+  bed:
+    PLA: 60
+    PETG: 80
+    ABS: 100
+    TPU: 60
+    Nylon: 80
+    "Cool Down": 0
