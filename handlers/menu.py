@@ -6,15 +6,32 @@ from telegram.constants import ParseMode
 from config import get as cfg, lang, is_multi_printer, active_printer_name
 from lang import t
 from helpers import auth, auth_cb, btn, uid
+from monitor import is_printer_online
 
 
 def main_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     L = lang()
+    online = is_printer_online(user_id)
+
+    if not online:
+        # Stripped offline menu — only Status, Settings, Switch Printer, E-Stop
+        buttons = [
+            [btn(t("menu.status", L), "menu:status")],
+            [btn(t("menu.settings", L), "menu:settings")],
+        ]
+        if cfg().get("safety", {}).get("emergency_stop_enabled", True):
+            buttons.append([btn(t("menu.estop", L), "menu:estop")])
+        if is_multi_printer():
+            name = active_printer_name(user_id)
+            buttons.append([btn(f"🔀 {t('menu.switch_printer', L)} ({name})", "menu:printers")])
+        return InlineKeyboardMarkup(buttons)
+
     buttons = [
         [btn(t("menu.status", L), "menu:status"), btn(t("menu.temps", L), "menu:temps")],
         [btn(t("menu.files", L), "menu:files"), btn(t("menu.print_ctrl", L), "menu:print_ctrl")],
         [btn(t("menu.macros", L), "menu:macros"), btn(t("menu.gcode", L), "menu:gcode")],
         [btn(t("menu.camera", L), "menu:camera"), btn(t("menu.system", L), "menu:system")],
+        [btn(t("menu.bed_mesh", L), "menu:bed_mesh")],
         [btn(t("menu.settings", L), "menu:settings")],
     ]
     if cfg().get("safety", {}).get("emergency_stop_enabled", True):
@@ -27,11 +44,15 @@ def main_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
 
 def main_menu_text(user_id: int) -> str:
     L = lang()
-    text = t("menu.title", L)
+    online = is_printer_online(user_id)
+    if not online:
+        title = f"⚫ {t('menu.title', L)}"
+    else:
+        title = t("menu.title", L)
     if is_multi_printer():
         name = active_printer_name(user_id)
-        text = f"🖨️ *{name}*\n\n{text}"
-    return text
+        title = f"🖨️ *{name}*\n\n{title}"
+    return title
 
 
 @auth
@@ -78,6 +99,9 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     from handlers.settings import cb_settings
     from handlers.estop import cb_estop
     from handlers.printers import cb_printers
+    from handlers.adjust import cb_adjust
+    from handlers.bed_mesh import cb_bed_mesh
+    from handlers.history import cb_history
 
     routes = {
         "main": lambda: show_menu(q, uid(update)),
@@ -92,6 +116,9 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "settings": lambda: cb_settings(update, ctx),
         "estop": lambda: cb_estop(update, ctx),
         "printers": lambda: cb_printers(update, ctx),
+        "adjust": lambda: cb_adjust(update, ctx),
+        "bed_mesh": lambda: cb_bed_mesh(update, ctx),
+        "history": lambda: cb_history(update, ctx),
     }
 
     handler = routes.get(target)

@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth, auth_cb, btn, uid
+from helpers import auth, auth_cb, btn, uid, offline_guard
 import api
 
 GCODE_INPUT = 200
@@ -15,7 +15,11 @@ GCODE_INPUT = 200
 async def cb_gcode_entry(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    user_id = uid(update)
     L = lang()
+
+    if await offline_guard(q, user_id):
+        return GCODE_INPUT
 
     quick = [
         [btn("G28 Home", "gcode_quick:G28"), btn("G90 Absolute", "gcode_quick:G90")],
@@ -39,7 +43,7 @@ async def cb_gcode_quick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     cmd = q.data[len("gcode_quick:"):]
     user_id = uid(update)
     r = await api.gcode(cmd, user_id=user_id)
-    await q.answer(f"{'✓' if r else '✗'} {cmd}", show_alert=True)
+    await q.answer(f"{'\u2713' if r else '\u2717'} {cmd}", show_alert=True)
 
 
 @auth

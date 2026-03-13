@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, state_icon, printer_badge
+from helpers import auth_cb, btn, uid, state_icon, printer_badge, offline_guard
 import api
 
 
@@ -15,6 +15,9 @@ async def cb_print_ctrl(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     L = lang()
     user_id = uid(update)
+
+    if await offline_guard(q, user_id):
+        return
 
     data = await api.get("/printer/objects/query?print_stats", user_id=user_id)
     state = "unknown"

@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, btn_url
+from helpers import auth_cb, btn, uid, btn_url, offline_guard
 from config import active_camera
 import api
 
@@ -17,6 +17,9 @@ async def cb_camera(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     L = lang()
     user_id = uid(update)
+
+    if await offline_guard(q, user_id):
+        return
 
     cam = active_camera(user_id)
     snap_url = cam.get("snapshot_url", "")
