@@ -1,8 +1,8 @@
 # 🖨️ Telegram Printer Bot
 
-> **100% vibecoded.** Not a single line of this project was written by a human. The entire codebase — bot, translations, docs, even this README — was generated from scratch by AI ([Perplexity Computer](https://www.perplexity.ai/)). No human fingers touched any code, CSS, or config. Pure vibes, zero keystrokes.
+> **100% supervibecoded.** Not a single line of this project was written by a human. Not even one human touched this. The entire codebase — bot, translations, docs, even this README — was generated from scratch by AI ([Perplexity Computer](https://www.perplexity.ai/)). Pure vibes, zero keystrokes.
 
-Full-featured Telegram bot for Klipper/Moonraker 3D printers — inline buttons everywhere, multi-language, auto-refresh, multi-printer support, offline detection.
+Full-featured Telegram bot for Klipper/Moonraker 3D printers — inline buttons everywhere, multi-language, auto-refresh, multi-printer support, offline-aware UI, live adjustments, bed mesh visualization, print history.
 
 ## Project Structure
 
@@ -14,20 +14,25 @@ telegram-printer-bot/
 ├── api.py              # Moonraker API client (per-user printer routing)
 ├── lang.py             # Translations (EN / DE / RU / PL)
 ├── helpers.py          # Auth decorators, formatting, button builders
-├── monitor.py          # Background monitor (notifications, filament, offline detection)
+├── monitor.py          # Background monitor (notifications, milestones, offline tracking)
 ├── handlers/
-│   ├── menu.py         # Main menu + router
-│   ├── status.py       # Status dashboard + auto-refresh
+│   ├── menu.py         # Main menu + router (offline-aware)
+│   ├── status.py       # Status dashboard + auto-refresh + overrides
 │   ├── temps.py        # Temperature control + presets
 │   ├── files.py        # Paginated file browser
 │   ├── control.py      # Print control (pause/resume/cancel)
 │   ├── gcode.py        # GCode console
-│   ├── macros.py       # Klipper macro runner
+│   ├── macros.py       # Klipper macros (aliases + pagination)
 │   ├── camera.py       # Camera snapshots
 │   ├── system.py       # System info + restart
 │   ├── estop.py        # Emergency stop
 │   ├── settings.py     # Live settings menu
-│   └── printers.py     # Multi-printer selector
+│   ├── printers.py     # Multi-printer selector
+│   ├── adjust.py       # Speed / flow / fan / Z-offset adjustments
+│   ├── bed_mesh.py     # Bed mesh visualization
+│   └── history.py      # Print history browser
+├── printer-control/
+│   └── SKILL.md        # AI agent skill for printer control
 └── requirements.txt
 ```
 
@@ -63,7 +68,37 @@ With one printer configured, the bot works exactly like before — no switch but
 
 ### 📊 Status Dashboard (Auto-Refresh)
 - Progress bar, ETA, duration, filament used, temperatures
-- **Auto-refresh**: tap the button and the status updates itself every 5 seconds — no need to keep pressing refresh
+- **Clock ETA** — shows estimated finish as wall-clock time (e.g. "Finish at: ~15:30")
+- **Layer count** — current/total layers when available
+- **Speed / Flow / Fan / Z-offset overrides** — shown when they differ from defaults
+- **Auto-refresh**: tap the button and the status updates itself every 5 seconds
+- Quick access to **Adjust**, **Print History**, and **Bed Mesh** right from the status page
+
+### ⚫ Offline-Aware UI
+When a printer is unreachable, the bot doesn't spam you with notifications. Instead:
+- The **main menu** shows a stripped-down version with only Status, Settings, E-Stop, and printer switch
+- The **status page** displays cached data with a "last seen X ago" timestamp
+- All control handlers are **blocked** with a friendly offline message
+- E-Stop always remains available regardless of online status
+
+### 🔧 Live Adjustments
+Adjust print parameters on the fly from the status page:
+- **Speed override**: 50% / 75% / 100% / 125% / 150%
+- **Flow override**: 75% / 100% / 110% / 120%
+- **Fan speed**: 0% / 25% / 50% / 75% / 100%
+- **Z-offset**: ±0.01mm / ±0.05mm / reset
+
+### 📐 Bed Mesh Visualization
+View your bed mesh probe data as a text grid right in Telegram:
+- Profile name, grid dimensions
+- Min/max range across the mesh
+- Full probed matrix rendered as numbers
+
+### 📜 Print History
+Browse your last 50 completed prints (accessed from the status page):
+- Status icons (✅ completed, ❌ error, 🟠 cancelled)
+- Duration and date for each job
+- Paginated with 10 entries per page
 
 ### 🌡️ Temperature Control
 - Material presets (PLA, PETG, ABS, TPU, Nylon)
@@ -83,8 +118,19 @@ With one printer configured, the bot works exactly like before — no switch but
 - Cancel with confirmation
 
 ### ⚡ Macros
-- Auto-discovers Klipper macros
+- Auto-discovers Klipper macros (hides internal `_` prefixed ones)
+- **Human-readable aliases** — map ugly macro names to friendly labels in config
+- **Pagination** — handles large macro lists with prev/next pages
 - Run with confirmation
+
+```yaml
+macros:
+  aliases:
+    LOAD_FILAMENT: "🔄 Load Filament"
+    UNLOAD_FILAMENT: "🔄 Unload Filament"
+    PARK: "🅿️ Park Nozzle"
+  per_page: 8
+```
 
 ### 💻 GCode Console
 - Quick buttons (G28, G90, G91, M84, fan)
@@ -101,15 +147,17 @@ With one printer configured, the bot works exactly like before — no switch but
 ### 🚨 Emergency Stop
 - Configurable confirmation
 - Can be hidden from menu
+- **Always available** — even when printer is marked offline
 
 ### 🔔 Notifications
 - Print complete / error / started / cancelled
+- **Progress milestones** — get notified at 25%, 50%, 75% with ETA
 - **Filament runout detection** (works with Klipper filament sensors)
-- **Printer offline/online detection** — notifies you when a printer goes unreachable (after 3 consecutive failed polls) and when it comes back
 - Temperature alerts
+- All toggleable in settings
 
 ### ⚙️ Live Settings
-- Toggle every notification type (including offline detection)
+- Toggle every notification type (including progress milestones)
 - Change language, poll interval, files per page
 - E-Stop visibility and confirmation
 - All saved to config.yaml instantly
@@ -171,10 +219,6 @@ systemctl enable --now printer-bot
 
 The bot auto-detects Klipper filament sensors (`filament_switch_sensor` and `filament_motion_sensor`). If the sensor reports filament gone while printing, you get an immediate notification. Make sure your sensor is configured in your Klipper `printer.cfg`.
 
-## Printer Offline Detection
-
-The monitor tracks connectivity to each printer. If a printer fails to respond for 3 consecutive poll cycles, it's marked offline and you get a notification. When it comes back, you get another notification. Toggle this in settings with the "Printer Offline" toggle.
-
 ## Security
 
 - Only `allowed_user_ids` can interact
@@ -191,4 +235,4 @@ MIT — do whatever you want with it.
 
 ---
 
-*Supervibecoded with ❤️ by AI. Humans only provided vibes.*
+*Supervibecoded with ❤️ by AI. Not even one human touched this.*
