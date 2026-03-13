@@ -51,7 +51,7 @@ notifications:
   on_print_start: true
   on_print_cancelled: true
   on_filament_runout: true
-  on_printer_offline: true
+  on_progress_milestone: true
   temp_alert_threshold: 0
 
 monitoring:
@@ -81,3 +81,10 @@ temp_presets:
     TPU: 60
     Nylon: 80
     "Cool Down": 0
+
+macros:
+  aliases:
+    LOAD_FILAMENT: "🔄 Load Filament"
+    UNLOAD_FILAMENT: "🔄 Unload Filament"
+    # Add your own: MACRO_NAME: "Display Name"
+  per_page: 8
