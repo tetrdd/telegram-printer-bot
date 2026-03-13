@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 from config import get as cfg, lang
 from lang import t
-from helpers import auth, auth_cb, btn, uid, grid, printer_badge
+from helpers import auth, auth_cb, btn, uid, grid, printer_badge, offline_guard
 import api
 
 # Conversation states
@@ -19,6 +19,9 @@ async def cb_temps(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     L = lang()
     user_id = uid(update)
+
+    if await offline_guard(q, user_id):
+        return
 
     data = await api.get("/printer/objects/query?extruder&heater_bed", user_id=user_id)
     if not data:
@@ -85,7 +88,7 @@ async def cb_set_temp(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}", user_id=user_id)
 
     label = t("status.hotend", lang()) if heater == "hotend" else t("status.bed", lang())
-    await q.answer(f"{label} → {temp}°C {'✓' if r else '✗'}", show_alert=True)
+    await q.answer(f"{label} → {temp}°C {'\u2713' if r else '\u2717'}", show_alert=True)
     await cb_temps(update, ctx)
 
 
@@ -99,7 +102,7 @@ async def cb_cool_all(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await cb_temps(update, ctx)
 
 
-# ── Custom temperature input (conversation handlers) ────────────────────────
+# ── Custom temperature input (conversation handlers) ────────────────────────────
 
 @auth_cb
 async def cb_temp_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -130,7 +133,7 @@ async def handle_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return TEMP_CUSTOM_HOTEND
 
     r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}", user_id=user_id)
-    msg = f"🔥 {t('status.hotend', L)} → {temp}°C {'✓' if r else '✗'}"
+    msg = f"🔥 {t('status.hotend', L)} → {temp}°C {'\u2713' if r else '\u2717'}"
     await update.message.reply_text(
         msg,
         reply_markup=InlineKeyboardMarkup([[btn(t("temps.back", L), "menu:temps"), btn(t("btn.back_menu", L), "menu:main")]]),
@@ -151,7 +154,7 @@ async def handle_custom_bed(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return TEMP_CUSTOM_BED
 
     r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}", user_id=user_id)
-    msg = f"🛏️ {t('status.bed', L)} → {temp}°C {'✓' if r else '✗'}"
+    msg = f"🛏️ {t('status.bed', L)} → {temp}°C {'\u2713' if r else '\u2717'}"
     await update.message.reply_text(
         msg,
         reply_markup=InlineKeyboardMarkup([[btn(t("temps.back", L), "menu:temps"), btn(t("btn.back_menu", L), "menu:main")]]),
