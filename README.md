@@ -156,7 +156,10 @@ Message [@userinfobot](https://t.me/userinfobot) → copy your numeric ID.
 ### 3. Configure
 Edit `config.yaml` with your token, user ID, and printer IP.
 
-### 4. Run
+### 4. Install & Run
+
+**Requires Python 3.11–3.13.** Python 3.14 doesn't have pre-built aiohttp wheels yet — it will fail on Windows without Microsoft C++ Build Tools.
+
 ```bash
 pip install -r requirements.txt
 python bot.py
