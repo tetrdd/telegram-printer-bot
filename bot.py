@@ -41,7 +41,7 @@ def main():
 
     app = Application.builder().token(token).build()
 
-    # ── Import handlers ──────────────────────────────────────────────────────
+    # ── Import handlers ──────────────────────────────────────────────────
     from handlers.menu import cmd_start, cmd_menu, cb_menu_router
     from handlers.status import cb_status, cb_toggle_auto
     from handlers.temps import (
@@ -66,7 +66,7 @@ def main():
     from handlers.bed_mesh import cb_bed_mesh
     from handlers.history import cb_history, cb_history_page
 
-    # ── Conversation handlers (registered first for priority) ────────────────
+    # ── Conversation handlers (registered first for priority) ────────────
     gcode_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_gcode_entry, pattern=r"^menu:gcode$")],
         states={
@@ -117,12 +117,12 @@ def main():
     app.add_handler(temp_hotend_conv)
     app.add_handler(temp_bed_conv)
 
-    # ── Commands ─────────────────────────────────────────────────────────────
+    # ── Commands ─────────────────────────────────────────────────────────
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("menu", cmd_menu))
     app.add_handler(CommandHandler("help", cmd_start))
 
-    # ── Callback queries ──────────────────────────────────────────────────────
+    # ── Callback queries ─────────────────────────────────────────────────
     # Menu router (catches all menu:* except gcode which is handled by conv)
     app.add_handler(CallbackQueryHandler(cb_menu_router, pattern=r"^menu:"))
 
@@ -180,7 +180,7 @@ def main():
     # Settings (must be last — catches all set:* patterns)
     app.add_handler(CallbackQueryHandler(cb_setting_toggle, pattern=r"^set:"))
 
-    # ── Lifecycle hooks ───────────────────────────────────────────────────────
+    # ── Lifecycle hooks ──────────────────────────────────────────────────
     async def post_init(application: Application):
         # Set bot command menu
         await application.bot.set_my_commands([

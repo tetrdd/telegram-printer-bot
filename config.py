@@ -88,7 +88,7 @@ def default_printer() -> dict:
     return _printers[0]
 
 
-# ── Active printer per user ───────────────────────────────────────────────────
+# ── Active printer per user ──────────────────────────────────────────────────
 
 # {user_id: printer_id}
 _active_printer: dict[int, int] = {}

@@ -6,95 +6,68 @@ from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, offline_guard
+from helpers import auth, auth_cb, btn, uid, offline_guard
 import api
 
-GCODE_INPUT = 1
-
-QUICK_GCODES = [
-    ("G28", "Home All"),
-    ("G28 Z", "Home Z"),
-    ("G29", "Bed Level"),
-    ("M84", "Motors Off"),
-    ("M112", "E-Stop"),
-    ("FIRMWARE_RESTART", "FW Restart"),
-    ("CANCEL_PRINT", "Cancel"),
-    ("BED_MESH_CALIBRATE", "Mesh Cal."),
-]
-
-
-async def _show_gcode_menu(q, user_id: int, result: str = ""):
-    L = lang()
-    text = t("gcode.title", L)
-    if result:
-        text += f"\n\n`{result}`"
-
-    # 2 per row
-    rows = []
-    for i in range(0, len(QUICK_GCODES), 2):
-        row = [btn(QUICK_GCODES[i][1], f"gcode_quick:{QUICK_GCODES[i][0]}")]
-        if i + 1 < len(QUICK_GCODES):
-            row.append(btn(QUICK_GCODES[i + 1][1], f"gcode_quick:{QUICK_GCODES[i + 1][0]}"))
-        rows.append(row)
-
-    rows.append([btn(t("btn.back_menu", L), "menu:main")])
-
-    await q.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(rows),
-        parse_mode=ParseMode.MARKDOWN,
-    )
+GCODE_INPUT = 200
 
 
 @auth_cb
 async def cb_gcode_entry(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Entry point for gcode conversation."""
     q = update.callback_query
     await q.answer()
     user_id = uid(update)
+    L = lang()
 
     if await offline_guard(q, user_id):
-        return ConversationHandler.END
+        return GCODE_INPUT
 
-    await _show_gcode_menu(q, user_id)
+    quick = [
+        [btn("G28 Home", "gcode_quick:G28"), btn("G90 Absolute", "gcode_quick:G90")],
+        [btn("G91 Relative", "gcode_quick:G91"), btn("M84 Motors Off", "gcode_quick:M84")],
+        [btn("M106 S255 Fan 100%", "gcode_quick:M106 S255")],
+        [btn("M107 Fan Off", "gcode_quick:M107")],
+        [btn(t("btn.back_menu", L), "menu:main")],
+    ]
+
+    await q.edit_message_text(
+        t("gcode.title", L),
+        reply_markup=InlineKeyboardMarkup(quick),
+        parse_mode=ParseMode.MARKDOWN,
+    )
     return GCODE_INPUT
 
 
 @auth_cb
 async def cb_gcode_quick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Handle quick gcode button press."""
     q = update.callback_query
     cmd = q.data[len("gcode_quick:"):]
     user_id = uid(update)
-    await q.answer()
+    r = await api.gcode(cmd, user_id=user_id)
+    await q.answer(f"{'✓' if r else '✗'} {cmd}", show_alert=True)
 
-    if await offline_guard(q, user_id):
-        return ConversationHandler.END
 
-    result = await api.gcode(cmd, user_id=user_id)
-    await _show_gcode_menu(q, user_id, result=result or "error")
+@auth
+async def handle_gcode_input(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    cmd = update.message.text.strip()
+    L = lang()
+    user_id = uid(update)
+    r = await api.gcode(cmd, user_id=user_id)
+
+    if r:
+        text = t("gcode.ok", L).format(cmd=cmd)
+    else:
+        text = t("gcode.fail", L).format(cmd=cmd)
+
+    await update.message.reply_text(
+        f"{text}\n\n{t('gcode.another', L)}",
+        reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
+        parse_mode=ParseMode.MARKDOWN,
+    )
     return GCODE_INPUT
 
 
-async def handle_gcode_input(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Handle free-text gcode input."""
-    user_id = update.effective_user.id
-    from config import allowed_users
-    if user_id not in allowed_users():
-        return ConversationHandler.END
-
-    cmd = update.message.text.strip()
-    result = await api.gcode(cmd, user_id=user_id)
-    L = lang()
-
-    keyboard = [[btn(t("btn.back_menu", L), "menu:main")]]
-    await update.message.reply_text(
-        f"`{cmd}` → `{result or 'error'}`",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode=ParseMode.MARKDOWN,
-    )
-    return ConversationHandler.END
-
-
 async def cancel_gcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    from handlers.menu import cmd_start
+    await cmd_start(update, ctx)
     return ConversationHandler.END

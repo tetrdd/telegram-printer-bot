@@ -1,116 +1,120 @@
-"""Klipper macro discovery and runner with aliases, pagination."""
+"""Klipper macro discovery and runner with aliases, pagination, offline guard."""
 from __future__ import annotations
 
+import math
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from config import lang, get as get_cfg
+from telegram.constants import ParseMode
+from config import get as cfg, lang
 from lang import t
-from helpers import auth_cb, btn, uid, offline_guard
+from helpers import auth_cb, btn, uid, grid, offline_guard
 import api
-
-MACRO_PAGE_SIZE = 8
-
-
-def _macro_display(name: str, aliases: dict[str, str]) -> str:
-    return aliases.get(name, name.replace("_", " ").title())
-
-
-async def _show_macros(q, user_id: int, page: int = 0):
-    L = lang()
-    cfg = get_cfg()
-    aliases = cfg.get("macro_aliases", {})
-
-    objects = await api.printer_objects(user_id=user_id)
-    macros = sorted([
-        o[len("gcode_macro "):]
-        for o in objects
-        if o.startswith("gcode_macro ")
-        and not o[len("gcode_macro "):].startswith("_")
-    ])
-
-    total = len(macros)
-    pages = max(1, (total + MACRO_PAGE_SIZE - 1) // MACRO_PAGE_SIZE)
-    page = max(0, min(page, pages - 1))
-    chunk = macros[page * MACRO_PAGE_SIZE: (page + 1) * MACRO_PAGE_SIZE]
-
-    text = f"{t('macros.title', L)} ({total} {t('macros.found', L)}, {t('files.page', L)} {page+1}/{pages})"
-
-    keyboard = []
-    for macro in chunk:
-        label = _macro_display(macro, aliases)
-        keyboard.append([btn(label, f"macro:run_ask:{macro}")])
-
-    nav = []
-    if page > 0:
-        nav.append(btn(t("btn.prev", L), f"macros:page:{page-1}"))
-    if page < pages - 1:
-        nav.append(btn(t("btn.next", L), f"macros:page:{page+1}"))
-    if nav:
-        keyboard.append(nav)
-
-    keyboard.append([btn(t("btn.refresh", L), f"macros:page:{page}"), btn(t("btn.back_menu", L), "menu:main")])
-
-    await q.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
 
 
 @auth_cb
 async def cb_macros(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    L = lang()
     user_id = uid(update)
-    page = int(q.data.split(":")[2]) if ":" in q.data else 0
 
     if await offline_guard(q, user_id):
         return
 
-    await _show_macros(q, user_id, page=page)
+    # Parse page from callback data: macros:page:N or menu:macros
+    page = 0
+    if q.data.startswith("macros:page:"):
+        try:
+            page = int(q.data.split(":")[2])
+        except (IndexError, ValueError):
+            page = 0
+
+    objects = await api.printer_objects(user_id=user_id)
+    macros = sorted([
+        obj.replace("gcode_macro ", "")
+        for obj in objects
+        if obj.startswith("gcode_macro ") and not obj.startswith("gcode_macro _")
+    ])
+
+    if not macros:
+        await q.edit_message_text(
+            t("macros.empty", L),
+            reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    # Read config: aliases and per_page
+    macro_cfg = cfg().get("macros", {})
+    aliases = macro_cfg.get("aliases", {})
+    per_page = macro_cfg.get("per_page", 8)
+
+    total_pages = math.ceil(len(macros) / per_page)
+    page = max(0, min(page, total_pages - 1))
+    page_macros = macros[page * per_page : (page + 1) * per_page]
+
+    # Build buttons using aliases when available
+    buttons = []
+    for m in page_macros:
+        label = aliases.get(m, m)
+        # Keep button label reasonably short
+        if len(label) > 30:
+            label = label[:27] + "..."
+        buttons.append(btn(label, f"macro:run_ask:{m}"))
+
+    kb = grid(buttons, cols=2)
+
+    # Pagination navigation
+    nav = []
+    if page > 0:
+        nav.append(btn(t("files.prev", L), f"macros:page:{page - 1}"))
+    if page < total_pages - 1:
+        nav.append(btn(t("files.next", L), f"macros:page:{page + 1}"))
+    if nav:
+        kb.append(nav)
+
+    kb.append([btn(t("btn.back_menu", L), "menu:main")])
+
+    if total_pages > 1:
+        title = t("macros.page", L).format(
+            page=page + 1, total=total_pages, count=len(macros)
+        )
+    else:
+        title = t("macros.title", L).format(count=len(macros))
+
+    await q.edit_message_text(
+        title,
+        reply_markup=InlineKeyboardMarkup(kb),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @auth_cb
 async def cb_macro_ask(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Ask for confirmation before running a macro."""
     q = update.callback_query
-    await q.answer()
-    user_id = uid(update)
     macro = q.data[len("macro:run_ask:"):]
+    await q.answer()
     L = lang()
-    cfg = get_cfg()
-    aliases = cfg.get("macro_aliases", {})
-    label = _macro_display(macro, aliases)
 
-    keyboard = [
-        [
-            btn(t("macros.run_yes", L), f"macro:run:{macro}"),
-            btn(t("macros.run_no", L), "macros:page:0"),
-        ]
-    ]
+    # Get alias for display
+    aliases = cfg().get("macros", {}).get("aliases", {})
+    display_name = aliases.get(macro, macro)
+
     await q.edit_message_text(
-        t("macros.confirm", L).format(name=label),
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        t("macros.run_confirm", L).format(name=display_name),
+        reply_markup=InlineKeyboardMarkup([
+            [btn(t("macros.run_btn", L), f"macro:run:{macro}"), btn(t("btn.cancel", L), "menu:macros")],
+        ]),
+        parse_mode=ParseMode.MARKDOWN,
     )
 
 
 @auth_cb
 async def cb_macro_run(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Run a macro."""
     q = update.callback_query
-    await q.answer()
-    user_id = uid(update)
     macro = q.data[len("macro:run:"):]
-    L = lang()
+    user_id = uid(update)
 
-    result = await api.gcode(macro, user_id=user_id)
-    cfg = get_cfg()
-    aliases = cfg.get("macro_aliases", {})
-    label = _macro_display(macro, aliases)
-
-    text = (
-        t("macros.ran", L).format(name=label)
-        if result
-        else t("macros.failed", L).format(name=label)
-    )
-    keyboard = [[btn(t("btn.back_menu", L), "menu:main")]]
-    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+    r = await api.gcode(macro, user_id=user_id)
+    await q.answer(f"{'✅' if r else '❌'} {macro}", show_alert=True)
+    await cb_macros(update, ctx)

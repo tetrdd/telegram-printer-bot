@@ -4,175 +4,160 @@ from __future__ import annotations
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
-from config import lang, get as get_cfg
+from config import get as cfg, lang
 from lang import t
-from helpers import auth_cb, btn, uid, offline_guard
+from helpers import auth, auth_cb, btn, uid, grid, printer_badge, offline_guard
 import api
 
-TEMP_CUSTOM_HOTEND = 10
-TEMP_CUSTOM_BED = 11
-
-
-async def _show_temps(q, user_id: int, msg: str = ""):
-    L = lang()
-    status = await api.printer_status(user_id=user_id)
-    if status is None:
-        await q.edit_message_text(
-            t("status.offline", L),
-            reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
-        )
-        return
-
-    extruder = status.get("extruder", {})
-    heater_bed = status.get("heater_bed", {})
-    hotend_t = extruder.get("temperature", 0)
-    hotend_target = extruder.get("target", 0)
-    bed_t = heater_bed.get("temperature", 0)
-    bed_target = heater_bed.get("target", 0)
-
-    cfg = get_cfg()
-    hotend_presets = cfg.get("temp_presets", {}).get("hotend", [200, 210, 220, 230, 240])
-    bed_presets = cfg.get("temp_presets", {}).get("bed", [50, 60, 70, 80])
-
-    text = (
-        f"{t('temps.title', L)}\n\n"
-        f"{t('status.hotend', L)}: `{hotend_t:.1f}°C / {hotend_target:.0f}°C`\n"
-        f"{t('status.bed', L)}: `{bed_t:.1f}°C / {bed_target:.0f}°C`"
-    )
-    if msg:
-        text += f"\n\n✅ {msg}"
-
-    hotend_row = [btn(f"{p}°", f"set_temp:hotend:{p}") for p in hotend_presets]
-    hotend_row.append(btn(t("temps.custom", L), "temp_custom:hotend"))
-
-    bed_row = [btn(f"{p}°", f"set_temp:bed:{p}") for p in bed_presets]
-    bed_row.append(btn(t("temps.custom", L), "temp_custom:bed"))
-
-    keyboard = [
-        hotend_row,
-        bed_row,
-        [btn(t("temps.cool_all", L), "temp:cool_all")],
-        [btn(t("btn.refresh", L), "menu:temps"), btn(t("btn.back_menu", L), "menu:main")],
-    ]
-
-    await q.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode=ParseMode.MARKDOWN,
-    )
+# Conversation states
+TEMP_CUSTOM_HOTEND = 100
+TEMP_CUSTOM_BED = 101
 
 
 @auth_cb
 async def cb_temps(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    L = lang()
     user_id = uid(update)
 
     if await offline_guard(q, user_id):
         return
 
-    await _show_temps(q, user_id)
+    data = await api.get("/printer/objects/query?extruder&heater_bed", user_id=user_id)
+    if not data:
+        await q.edit_message_text(
+            t("err.no_connect", L),
+            reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
+        )
+        return
+
+    res = data.get("result", {}).get("status", {})
+    ext = res.get("extruder", {})
+    bed = res.get("heater_bed", {})
+
+    text = (
+        f"{printer_badge(user_id)}"
+        f"{t('temps.title', L)}\n\n"
+        f"{t('status.hotend', L)}: *{ext.get('temperature', 0):.1f}°C* → {ext.get('target', 0):.0f}°C\n"
+        f"  {t('temps.power', L)}: {ext.get('power', 0) * 100:.0f}%\n\n"
+        f"{t('status.bed', L)}: *{bed.get('temperature', 0):.1f}°C* → {bed.get('target', 0):.0f}°C\n"
+        f"  {t('temps.power', L)}: {bed.get('power', 0) * 100:.0f}%"
+    )
+
+    kb = InlineKeyboardMarkup([
+        [btn(t("temps.set_hotend", L), "temp:hotend"), btn(t("temps.set_bed", L), "temp:bed")],
+        [btn(t("temps.cool_all", L), "temp:cool_all")],
+        [btn(t("btn.refresh", L), "menu:temps"), btn(t("btn.back_menu", L), "menu:main")],
+    ])
+    await q.edit_message_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
 
 
 @auth_cb
 async def cb_temp_presets(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Show presets for hotend or bed (pattern: temp:(hotend|bed))."""
+    """Show preset buttons for hotend or bed."""
     q = update.callback_query
+    heater = q.data.split(":")[1]  # "hotend" or "bed"
     await q.answer()
-    user_id = uid(update)
+    L = lang()
 
-    if await offline_guard(q, user_id):
-        return
+    presets = cfg().get("temp_presets", {}).get(heater, {})
+    buttons = [btn(f"{name} ({temp}°C)", f"set_temp:{heater}:{temp}") for name, temp in presets.items()]
+    buttons.append(btn(t("temps.custom", L), f"temp_custom:{heater}"))
 
-    await _show_temps(q, user_id)
+    kb = grid(buttons, cols=2)
+    kb.append([btn(t("temps.back", L), "menu:temps")])
+
+    title_key = "temps.hotend_title" if heater == "hotend" else "temps.bed_title"
+    await q.edit_message_text(
+        t(title_key, L),
+        reply_markup=InlineKeyboardMarkup(kb),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @auth_cb
 async def cb_set_temp(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Pattern: set_temp:<hotend|bed>:<value>"""
     q = update.callback_query
-    parts = q.data.split(":")
-    heater = parts[1]
-    target = int(parts[2])
+    _, heater, temp_str = q.data.split(":")
+    temp = int(temp_str)
     user_id = uid(update)
-    await q.answer()
 
-    if await offline_guard(q, user_id):
-        return
-
-    L = lang()
     if heater == "hotend":
-        await api.gcode(f"M104 S{target}", user_id=user_id)
-        msg = t("temps.set_hotend", L).format(val=target)
+        r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}", user_id=user_id)
     else:
-        await api.gcode(f"M140 S{target}", user_id=user_id)
-        msg = t("temps.set_bed", L).format(val=target)
+        r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}", user_id=user_id)
 
-    await _show_temps(q, user_id, msg=msg)
+    label = t("status.hotend", lang()) if heater == "hotend" else t("status.bed", lang())
+    await q.answer(f"{label} → {temp}°C {'✓' if r else '✗'}", show_alert=True)
+    await cb_temps(update, ctx)
 
 
 @auth_cb
 async def cb_cool_all(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
     user_id = uid(update)
+    await api.gcode("SET_HEATER_TEMPERATURE HEATER=extruder TARGET=0", user_id=user_id)
+    await api.gcode("SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET=0", user_id=user_id)
+    await q.answer(t("temps.cooled", lang()), show_alert=True)
+    await cb_temps(update, ctx)
 
-    if await offline_guard(q, user_id):
-        return
 
-    await api.gcode("M104 S0", user_id=user_id)
-    await api.gcode("M140 S0", user_id=user_id)
-    L = lang()
-    await _show_temps(q, user_id, msg=t("temps.cooled", L))
-
+# ── Custom temperature input (conversation handlers) ────────────────────────
 
 @auth_cb
 async def cb_temp_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Entry point for custom hotend temp conversation."""
     q = update.callback_query
     await q.answer()
-    L = lang()
-    await q.edit_message_text(t("temps.enter_hotend", L))
+    await q.edit_message_text(t("temps.custom_hotend_prompt", lang()), parse_mode=ParseMode.MARKDOWN)
     return TEMP_CUSTOM_HOTEND
 
 
 @auth_cb
 async def cb_temp_custom_bed(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Entry point for custom bed temp conversation."""
     q = update.callback_query
     await q.answer()
-    L = lang()
-    await q.edit_message_text(t("temps.enter_bed", L))
+    await q.edit_message_text(t("temps.custom_bed_prompt", lang()), parse_mode=ParseMode.MARKDOWN)
     return TEMP_CUSTOM_BED
 
 
+@auth
 async def handle_custom_hotend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    from config import allowed_users
-    if user_id not in allowed_users():
-        return ConversationHandler.END
-    try:
-        target = int(update.message.text.strip())
-    except ValueError:
-        await update.message.reply_text("Invalid temperature.")
-        return TEMP_CUSTOM_HOTEND
-    await api.gcode(f"M104 S{target}", user_id=user_id)
     L = lang()
-    await update.message.reply_text(t("temps.set_hotend", L).format(val=target))
+    user_id = uid(update)
+    try:
+        temp = int(update.message.text.strip())
+        if not 0 <= temp <= 300:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text(t("temps.invalid_hotend", L))
+        return TEMP_CUSTOM_HOTEND
+
+    r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={temp}", user_id=user_id)
+    msg = f"🔥 {t('status.hotend', L)} → {temp}°C {'✓' if r else '✗'}"
+    await update.message.reply_text(
+        msg,
+        reply_markup=InlineKeyboardMarkup([[btn(t("temps.back", L), "menu:temps"), btn(t("btn.back_menu", L), "menu:main")]]),
+    )
     return ConversationHandler.END
 
 
+@auth
 async def handle_custom_bed(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    from config import allowed_users
-    if user_id not in allowed_users():
-        return ConversationHandler.END
-    try:
-        target = int(update.message.text.strip())
-    except ValueError:
-        await update.message.reply_text("Invalid temperature.")
-        return TEMP_CUSTOM_BED
-    await api.gcode(f"M140 S{target}", user_id=user_id)
     L = lang()
-    await update.message.reply_text(t("temps.set_bed", L).format(val=target))
+    user_id = uid(update)
+    try:
+        temp = int(update.message.text.strip())
+        if not 0 <= temp <= 120:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text(t("temps.invalid_bed", L))
+        return TEMP_CUSTOM_BED
+
+    r = await api.gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={temp}", user_id=user_id)
+    msg = f"🛏️ {t('status.bed', L)} → {temp}°C {'✓' if r else '✗'}"
+    await update.message.reply_text(
+        msg,
+        reply_markup=InlineKeyboardMarkup([[btn(t("temps.back", L), "menu:temps"), btn(t("btn.back_menu", L), "menu:main")]]),
+    )
     return ConversationHandler.END
