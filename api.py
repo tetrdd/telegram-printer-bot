@@ -3,6 +3,7 @@ Moonraker API client.
 All communication with the printer goes through here.
 Supports multi-printer: pass user_id to route to the correct Moonraker instance.
 """
+from __future__ import annotations
 
 import logging
 import urllib.parse
@@ -108,7 +109,7 @@ async def snapshot(user_id: int | None = None) -> bytes | None:
     return None
 
 
-# ── High-level queries ────────────────────────────────────────────────────────────────────────
+# ── High-level queries ──────────────────────────────────────────────────────
 
 async def printer_status(user_id: int | None = None) -> dict | None:
     """Get print stats, progress, temperatures, gcode_move and fan in one call."""
@@ -197,7 +198,7 @@ async def proc_stats(user_id: int | None = None) -> dict | None:
     return data.get("result") if data else None
 
 
-# ── New endpoints ─────────────────────────────────────────────────────────────────────────────
+# ── New endpoints ────────────────────────────────────────────────────────────
 
 async def print_history(limit: int = 20, user_id: int | None = None) -> list[dict]:
     """Get print history from Moonraker history API."""

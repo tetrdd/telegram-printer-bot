@@ -1,193 +1,212 @@
 """Paginated file browser — browse, info, print, delete."""
+from __future__ import annotations
 
-import math
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from config import get as cfg, lang, save as save_cfg
+from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, short_name, printer_badge, offline_guard
+from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, offline_guard
 import api
+
+PAGE_SIZE = 8
+
+
+def _sort_files(files: list[dict], sort: str) -> list[dict]:
+    if sort == "name":
+        return sorted(files, key=lambda f: f.get("filename", "").lower())
+    if sort == "size":
+        return sorted(files, key=lambda f: f.get("size", 0), reverse=True)
+    # default: date
+    return sorted(files, key=lambda f: f.get("modified", 0), reverse=True)
+
+
+async def _show_files(q, user_id: int, page: int = 0, sort: str = "date"):
+    L = lang()
+    files = await api.file_list(user_id=user_id)
+    files = _sort_files(files, sort)
+
+    total = len(files)
+    pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(0, min(page, pages - 1))
+    chunk = files[page * PAGE_SIZE: (page + 1) * PAGE_SIZE]
+
+    text = f"{t('files.title', L)} ({total} {t('files.files', L)}, {t('files.page', L)} {page+1}/{pages})"
+
+    keyboard = []
+    for f in chunk:
+        name = f.get("filename", "?")
+        size = fmt_size(f.get("size", 0))
+        keyboard.append([btn(f"📄 {name} ({size})", f"file:info:{name}")])
+
+    # Pagination
+    nav = []
+    if page > 0:
+        nav.append(btn(t("btn.prev", L), f"files:page:{page-1}:{sort}"))
+    nav.append(btn(f"{t('files.sort', L)}: {sort}", f"files:sort:{sort}"))
+    if page < pages - 1:
+        nav.append(btn(t("btn.next", L), f"files:page:{page+1}:{sort}"))
+    if nav:
+        keyboard.append(nav)
+
+    keyboard.append([btn(t("btn.refresh", L), f"files:page:{page}:{sort}"), btn(t("btn.back_menu", L), "menu:main")])
+
+    await q.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
 
 
 @auth_cb
 async def cb_files(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    L = lang()
     user_id = uid(update)
+    # Pattern: files:page:<page>:<sort>
+    parts = q.data.split(":")
+    page = int(parts[2]) if len(parts) > 2 else 0
+    sort = parts[3] if len(parts) > 3 else "date"
 
     if await offline_guard(q, user_id):
         return
 
-    page = 0
-    if q.data.startswith("files:page:"):
-        page = int(q.data.split(":")[2])
-
-    files = await api.file_list(user_id=user_id)
-    if not files:
-        await q.edit_message_text(
-            t("files.empty", L),
-            reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        return
-
-    # Sort
-    sort_by = cfg().get("files", {}).get("sort_by", "modified")
-    sort_order = cfg().get("files", {}).get("sort_order", "desc")
-    files.sort(key=lambda f: f.get(sort_by, 0), reverse=(sort_order == "desc"))
-
-    per_page = cfg().get("files", {}).get("files_per_page", 5)
-    total_pages = math.ceil(len(files) / per_page)
-    page = max(0, min(page, total_pages - 1))
-    page_files = files[page * per_page : (page + 1) * per_page]
-
-    lines = [f"{printer_badge(user_id)}{t('files.title', L).format(page=page + 1, total=total_pages)}\n"]
-    buttons = []
-    for i, f in enumerate(page_files):
-        name = f.get("path", "unknown")
-        size = fmt_size(f.get("size", 0))
-        display = short_name(name)
-        lines.append(f"`{page * per_page + i + 1}.` `{display}` ({size})")
-        buttons.append([
-            btn(f"🖨️ {display}", f"file:print:{name}"),
-            btn("ℹ️", f"file:info:{name}"),
-        ])
-
-    # Pagination
-    nav = []
-    if page > 0:
-        nav.append(btn(t("files.prev", L), f"files:page:{page - 1}"))
-    if page < total_pages - 1:
-        nav.append(btn(t("files.next", L), f"files:page:{page + 1}"))
-    if nav:
-        buttons.append(nav)
-
-    # Sort toggle + back
-    sort_label = t("files.by_date", L) if sort_by == "name" else t("files.by_name", L)
-    next_sort = "name" if sort_by == "modified" else "modified"
-    buttons.append([btn(sort_label, f"files:sort:{next_sort}"), btn(t("btn.back_menu", L), "menu:main")])
-
-    await q.edit_message_text(
-        "\n".join(lines),
-        reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN,
-    )
+    await _show_files(q, user_id, page=page, sort=sort)
 
 
 @auth_cb
 async def cb_file_sort(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Cycle through sort modes."""
     q = update.callback_query
-    sort_by = q.data.split(":")[2]
-    cfg().setdefault("files", {})["sort_by"] = sort_by
-    save_cfg()
-    await q.answer(f"{'\ud83d\udcc5' if sort_by == 'modified' else '\ud83d\udd24'}")
-    q.data = "files:page:0"
-    await cb_files(update, ctx)
+    await q.answer()
+    user_id = uid(update)
+    parts = q.data.split(":")
+    current = parts[2] if len(parts) > 2 else "date"
+    sorts = ["date", "name", "size"]
+    next_sort = sorts[(sorts.index(current) + 1) % len(sorts)]
+
+    if await offline_guard(q, user_id):
+        return
+
+    await _show_files(q, user_id, page=0, sort=next_sort)
 
 
 @auth_cb
 async def cb_file_info(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Show file metadata with print/delete options."""
     q = update.callback_query
-    filename = q.data[len("file:info:"):]
     await q.answer()
-    L = lang()
     user_id = uid(update)
+    filename = q.data[len("file:info:"):]
+    L = lang()
 
     meta = await api.file_metadata(filename, user_id=user_id)
-    if not meta:
-        await q.edit_message_text(
-            f"❌ `{filename}`",
-            reply_markup=InlineKeyboardMarkup([[btn(t("files.back", L), "menu:files")]]),
-            parse_mode=ParseMode.MARKDOWN,
+
+    if meta:
+        size = fmt_size(meta.get("size", 0))
+        filament = meta.get("filament_total", 0)
+        est = meta.get("estimated_time", 0)
+        layer_h = meta.get("layer_height", "-")
+        slicer = meta.get("slicer", "-")
+
+        text = (
+            f"📄 `{filename}`\n\n"
+            f"{t('files.size', L)}: {size}\n"
+            f"{t('files.filament', L)}: {filament:.0f} mm\n"
+            f"{t('files.time', L)}: {fmt_duration(est)}\n"
+            f"{t('files.layer', L)}: {layer_h} mm\n"
+            f"{t('files.slicer', L)}: {slicer}"
         )
-        return
+    else:
+        text = f"📄 `{filename}`"
 
-    size = fmt_size(meta.get("size", 0))
-    est = fmt_duration(meta.get("estimated_time", 0))
-    slicer = meta.get("slicer", "—")
-    slicer_ver = meta.get("slicer_version", "")
-    lh = meta.get("layer_height", "—")
-    flh = meta.get("first_layer_height", "—")
-    fil_m = meta.get("filament_total", 0) / 1000
-    fil_g = meta.get("filament_weight_total", 0)
-    obj_h = meta.get("object_height", "—")
-
-    text = (
-        f"{t('files.info_title', L)}\n\n"
-        f"{t('files.name', L)}: `{filename}`\n"
-        f"{t('files.size', L)}: {size}\n"
-        f"{t('files.est_time', L)}: {est}\n"
-        f"{t('files.slicer', L)}: {slicer} {slicer_ver}\n"
-        f"{t('files.layer_height', L)}: {lh} mm\n"
-        f"{t('files.first_layer', L)}: {flh} mm\n"
-        f"{t('files.obj_height', L)}: {obj_h} mm\n"
-        f"{t('files.filament_usage', L)}: {fil_m:.1f} m ({fil_g:.0f} g)"
-    )
-
-    kb = InlineKeyboardMarkup([
-        [btn(t("files.print_this", L), f"file:print:{filename}")],
+    keyboard = [
+        [btn(t("files.print", L), f"file:print:{filename}")],
         [btn(t("files.delete", L), f"file:delete_ask:{filename}")],
-        [btn(t("files.back", L), "menu:files"), btn(t("btn.back_menu", L), "menu:main")],
-    ])
-    await q.edit_message_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
+        [btn(t("btn.back", L), "files:page:0:date")],
+    ]
+
+    await q.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @auth_cb
 async def cb_file_print(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Confirm before starting a print."""
     q = update.callback_query
-    filename = q.data[len("file:print:"):]
     await q.answer()
+    user_id = uid(update)
+    filename = q.data[len("file:print:"):]
     L = lang()
 
+    keyboard = [
+        [
+            btn(t("files.print_yes", L), f"file:start:{filename}"),
+            btn(t("files.print_no", L), f"file:info:{filename}"),
+        ]
+    ]
     await q.edit_message_text(
-        t("files.start_confirm", L).format(filename=short_name(filename, 35)),
-        reply_markup=InlineKeyboardMarkup([
-            [btn(t("files.start_btn", L), f"file:start:{filename}"), btn(t("btn.cancel", L), "menu:files")],
-        ]),
-        parse_mode=ParseMode.MARKDOWN,
+        t("files.print_confirm", L).format(name=filename),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
 @auth_cb
 async def cb_file_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Start a print job."""
     q = update.callback_query
+    await q.answer()
+    user_id = uid(update)
     filename = q.data[len("file:start:"):]
     L = lang()
-    user_id = uid(update)
 
     ok = await api.start_print(filename, user_id=user_id)
-    await q.answer(t("files.started", L) if ok else t("generic.failed", L), show_alert=True)
-
-    from handlers.menu import show_menu
-    await show_menu(q, user_id)
+    text = (
+        t("files.print_started", L).format(name=filename)
+        if ok
+        else t("files.print_failed", L).format(name=filename)
+    )
+    keyboard = [[btn(t("btn.back_menu", L), "menu:main")]]
+    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 @auth_cb
 async def cb_file_delete_ask(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Ask for confirmation before deleting."""
     q = update.callback_query
-    filename = q.data[len("file:delete_ask:"):]
     await q.answer()
+    user_id = uid(update)
+    filename = q.data[len("file:delete_ask:"):]
     L = lang()
 
+    keyboard = [
+        [
+            btn(t("files.delete_yes", L), f"file:delete:{filename}"),
+            btn(t("files.delete_no", L), f"file:info:{filename}"),
+        ]
+    ]
     await q.edit_message_text(
-        t("files.delete_confirm", L).format(filename=filename),
-        reply_markup=InlineKeyboardMarkup([
-            [btn(t("files.delete_btn", L), f"file:delete:{filename}"), btn(t("files.keep_btn", L), f"file:info:{filename}")],
-        ]),
-        parse_mode=ParseMode.MARKDOWN,
+        t("files.delete_confirm", L).format(name=filename),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
 @auth_cb
 async def cb_file_delete(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Delete a file."""
     q = update.callback_query
+    await q.answer()
+    user_id = uid(update)
     filename = q.data[len("file:delete:"):]
     L = lang()
-    user_id = uid(update)
 
     ok = await api.delete_file(filename, user_id=user_id)
-    await q.answer(t("files.deleted", L) if ok else t("generic.failed", L), show_alert=True)
-    q.data = "menu:files"
-    await cb_files(update, ctx)
+    text = (
+        t("files.deleted", L).format(name=filename)
+        if ok
+        else t("files.delete_failed", L).format(name=filename)
+    )
+    keyboard = [[btn(t("btn.back", L), "files:page:0:date")]]
+    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))

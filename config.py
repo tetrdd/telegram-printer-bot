@@ -3,6 +3,7 @@ Configuration loader and saver.
 Reads config.yaml on startup, provides live save for settings changes.
 Supports single-printer (legacy) and multi-printer configs.
 """
+from __future__ import annotations
 
 import yaml
 from pathlib import Path
@@ -87,7 +88,7 @@ def default_printer() -> dict:
     return _printers[0]
 
 
-# ── Active printer per user ──────────────────────────────────────────────────
+# ── Active printer per user ───────────────────────────────────────────────────
 
 # {user_id: printer_id}
 _active_printer: dict[int, int] = {}

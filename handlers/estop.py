@@ -1,9 +1,9 @@
 """Emergency stop handler."""
+from __future__ import annotations
 
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from telegram.constants import ParseMode
-from config import get as cfg, lang
+from config import lang
 from lang import t
 from helpers import auth_cb, btn, uid
 import api
@@ -14,53 +14,27 @@ async def cb_estop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     L = lang()
-    user_id = uid(update)
-
-    if cfg().get("safety", {}).get("emergency_stop_confirm", True):
-        await q.edit_message_text(
-            t("estop.confirm", L),
-            reply_markup=InlineKeyboardMarkup([
-                [btn(t("estop.yes", L), "estop:confirm")],
-                [btn(t("btn.cancel", L), "menu:main")],
-            ]),
-            parse_mode=ParseMode.MARKDOWN,
-        )
-    else:
-        ok = await api.emergency_stop(user_id=user_id)
-        if ok:
-            await q.edit_message_text(
-                t("estop.done", L),
-                reply_markup=InlineKeyboardMarkup([
-                    [btn(t("system.fw_restart", L), "sys:fw_restart")],
-                    [btn(t("btn.back_menu", L), "menu:main")],
-                ]),
-                parse_mode=ParseMode.MARKDOWN,
-            )
-        else:
-            await q.edit_message_text(
-                t("estop.failed", L),
-                reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
-            )
+    keyboard = [
+        [
+            btn(t("estop.confirm_yes", L), "estop:confirm"),
+            btn(t("estop.confirm_no", L), "menu:main"),
+        ]
+    ]
+    await q.edit_message_text(
+        t("estop.confirm", L),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
 
 
 @auth_cb
 async def cb_estop_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    L = lang()
+    await q.answer(t("estop.executing", lang()), show_alert=True)
     user_id = uid(update)
-
-    ok = await api.emergency_stop(user_id=user_id)
-    if ok:
-        await q.answer("🚨", show_alert=True)
-        await q.edit_message_text(
-            t("estop.done", L),
-            reply_markup=InlineKeyboardMarkup([
-                [btn(t("system.fw_restart", L), "sys:fw_restart")],
-                [btn(t("btn.back_menu", L), "menu:main")],
-            ]),
-            parse_mode=ParseMode.MARKDOWN,
-        )
-    else:
-        await q.answer(t("estop.failed", L), show_alert=True)
-        from handlers.menu import show_menu
-        await show_menu(q, user_id)
+    await api.emergency_stop(user_id=user_id)
+    L = lang()
+    keyboard = [[btn(t("btn.back_menu", L), "menu:main")]]
+    await q.edit_message_text(
+        t("estop.done", L),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )

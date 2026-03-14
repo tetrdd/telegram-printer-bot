@@ -1,11 +1,12 @@
 """System info — versions, CPU, RAM, uptime, restart controls."""
+from __future__ import annotations
 
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, fmt_size, fmt_duration, printer_badge, offline_guard
+from helpers import auth_cb, btn, uid, offline_guard
 import api
 
 
@@ -13,79 +14,76 @@ import api
 async def cb_system(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    L = lang()
     user_id = uid(update)
+    L = lang()
 
     if await offline_guard(q, user_id):
         return
 
-    info = await api.system_info(user_id=user_id)
+    srv = await api.server_info(user_id=user_id)
+    sys_info = await api.system_info(user_id=user_id)
     proc = await api.proc_stats(user_id=user_id)
-    server = await api.server_info(user_id=user_id)
 
-    text = f"{printer_badge(user_id)}{t('system.title', L)}\n"
+    lines = [f"{t('system.title', L)}\n"]
 
-    if server:
-        text += f"\nMoonraker: v{server.get('moonraker_version', '?')}"
-        text += f"\nKlipper: {server.get('klippy_state', '?')}"
-        text += f"\nAPI: {server.get('api_version_string', '?')}"
+    if srv:
+        klipper_v = srv.get("klippy_state", "?")
+        moonraker_v = srv.get("moonraker_version", "?")
+        lines.append(f"{t('system.klipper', L)}: `{klipper_v}`")
+        lines.append(f"{t('system.moonraker', L)}: `{moonraker_v}`")
 
-    if info:
-        cpu = info.get("cpu_info", {})
-        if cpu:
-            text += f"\n\nCPU: {cpu.get('model', '?')}"
-            text += f"\nCores: {cpu.get('cpu_count', '?')}"
+    if sys_info:
+        cpu_info = sys_info.get("cpu_info", {})
+        cpu_name = cpu_info.get("cpu_desc", "?")
+        sd_info = sys_info.get("sd_info", {})
+        total_mb = sd_info.get("total_bytes", 0) // (1024 * 1024)
+        avail_mb = sd_info.get("available_bytes", 0) // (1024 * 1024)
+        lines.append(f"{t('system.cpu', L)}: `{cpu_name}`")
+        lines.append(f"{t('system.disk', L)}: `{avail_mb} MB free / {total_mb} MB`")
 
     if proc:
-        cpu_pct = proc.get("system_cpu_usage", {}).get("cpu", 0)
-        mem_used = proc.get("system_memory", {}).get("used", 0)
-        mem_total = proc.get("system_memory", {}).get("total", 0)
+        moonraker_proc = proc.get("moonraker_stats", [{}])[-1] if proc.get("moonraker_stats") else {}
+        cpu_pct = moonraker_proc.get("cpu_usage", 0)
+        mem_mb = moonraker_proc.get("memory", 0) / 1024
         uptime = proc.get("system_uptime", 0)
+        lines.append(f"{t('system.cpu_usage', L)}: `{cpu_pct:.1f}%`")
+        lines.append(f"{t('system.mem', L)}: `{mem_mb:.0f} MB`")
+        h = int(uptime // 3600)
+        m = int((uptime % 3600) // 60)
+        lines.append(f"{t('system.uptime', L)}: `{h}h {m}m`")
 
-        text += f"\n\n📈 CPU: {cpu_pct:.1f}%"
-        if mem_total:
-            text += f"\n💾 RAM: {fmt_size(mem_used)} / {fmt_size(mem_total)}"
-        text += f"\n⏱️ Uptime: {fmt_duration(uptime)}"
+    keyboard = [
+        [
+            btn(t("system.fw_restart", L), "sys:fw_restart"),
+            btn(t("system.host_restart", L), "sys:host_restart"),
+        ],
+        [btn(t("btn.refresh", L), "menu:system"), btn(t("btn.back_menu", L), "menu:main")],
+    ]
 
-        throttle = proc.get("throttled_state", {})
-        if throttle:
-            flags = throttle.get("flags", [])
-            if flags:
-                text += f"\n⚠️ Throttle: {', '.join(flags)}"
-
-    if not server and not info and not proc:
-        text += f"\n\n{t('err.no_connect', L)}"
-
-    kb = InlineKeyboardMarkup([
-        [btn(t("btn.refresh", L), "menu:system")],
-        [btn(t("system.fw_restart", L), "sys:fw_restart"), btn(t("system.host_restart", L), "sys:host_restart")],
-        [btn(t("btn.back_menu", L), "menu:main")],
-    ])
-    await q.edit_message_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
+    await q.edit_message_text(
+        "\n".join(lines),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @auth_cb
 async def cb_sys_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
-    await q.answer()
+    user_id = uid(update)
     L = lang()
 
-    confirm_texts = {
-        "fw_restart": t("system.fw_confirm", L),
-        "host_restart": t("system.host_confirm", L),
-    }
-    labels = {
-        "fw_restart": t("system.fw_restart", L),
-        "host_restart": t("system.host_restart", L),
-    }
-
+    keyboard = [
+        [
+            btn(t("system.confirm_yes", L), f"sys_confirm:{action}"),
+            btn(t("system.confirm_no", L), "menu:system"),
+        ]
+    ]
+    await q.answer()
     await q.edit_message_text(
-        confirm_texts.get(action, "?"),
-        reply_markup=InlineKeyboardMarkup([
-            [btn(labels.get(action, "?"), f"sys_confirm:{action}"), btn(t("btn.cancel", L), "menu:system")],
-        ]),
-        parse_mode=ParseMode.MARKDOWN,
+        t("system.confirm", L).format(action=action.replace("_", " ")),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -93,14 +91,21 @@ async def cb_sys_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def cb_sys_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
-    L = lang()
     user_id = uid(update)
+    await q.answer()
 
-    funcs = {"fw_restart": api.firmware_restart, "host_restart": api.host_reboot}
-    func = funcs.get(action)
-    if func:
-        r = await func(user_id=user_id)
-        await q.answer(t("generic.done", L) if r else t("generic.failed", L), show_alert=True)
+    if await offline_guard(q, user_id):
+        return
 
-    from handlers.menu import show_menu
-    await show_menu(q, user_id)
+    L = lang()
+    if action == "fw_restart":
+        await api.firmware_restart(user_id=user_id)
+        msg = t("system.fw_restarted", L)
+    elif action == "host_restart":
+        await api.host_reboot(user_id=user_id)
+        msg = t("system.host_restarted", L)
+    else:
+        msg = "?"
+
+    keyboard = [[btn(t("btn.back_menu", L), "menu:main")]]
+    await q.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))

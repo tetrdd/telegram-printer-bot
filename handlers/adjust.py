@@ -1,4 +1,5 @@
 """Adjustment controls — speed, flow, fan, Z-offset."""
+from __future__ import annotations
 
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -155,7 +156,7 @@ async def cb_adjust_fan(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 @auth_cb
 async def cb_adjust_z(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    # Pattern: adjust:z:<value>  where value is +0.01, -0.01, +0.05, -0.05, or "reset"
+    # Pattern: adjust:z:<value>  where value is +0.05, -0.05, +0.01, -0.01, or reset
     parts = q.data.split(":")
     value = parts[2]
     user_id = uid(update)
@@ -167,11 +168,10 @@ async def cb_adjust_z(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     L = lang()
     if value == "reset":
         r = await api.reset_z_offset(user_id=user_id)
-        msg = t("adjust.z_reset", L) if r else ""
+        msg = t("adjust.z_reset_done", L) if r else ""
     else:
         offset = float(value)
         r = await api.adjust_z_offset(offset, user_id=user_id)
         sign = "+" if offset > 0 else ""
-        msg = f"Z {sign}{offset:.3f}mm" if r else ""
-
+        msg = t("adjust.z_set", L).format(val=f"{sign}{offset:.2f}") if r else ""
     await _show_adjust(q, user_id, msg=msg)

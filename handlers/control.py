@@ -1,88 +1,119 @@
 """Print control — pause, resume, cancel, home, motors off."""
+from __future__ import annotations
 
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, state_icon, printer_badge, offline_guard
+from helpers import auth_cb, btn, uid, offline_guard
 import api
+
+
+async def _show_control(q, user_id: int, msg: str = ""):
+    L = lang()
+    status = await api.printer_status(user_id=user_id)
+    if status is None:
+        await q.edit_message_text(
+            t("status.offline", L),
+            reply_markup=InlineKeyboardMarkup([[btn(t("btn.back_menu", L), "menu:main")]]),
+        )
+        return
+
+    ps = status.get("print_stats", {})
+    state = ps.get("state", "unknown")
+    fname = ps.get("filename", "-")
+    ds = status.get("display_status", {})
+    progress = ds.get("progress", 0) * 100
+
+    text = (
+        f"{t('control.title', L)}\n\n"
+        f"{t('status.file', L)}: `{fname}`\n"
+        f"{t('status.state', L)}: `{state}`\n"
+        f"{t('status.progress', L)}: `{progress:.1f}%`"
+    )
+    if msg:
+        text += f"\n\n✅ {msg}"
+
+    printing = state == "printing"
+    paused = state == "paused"
+
+    keyboard = []
+    if printing:
+        keyboard.append([btn(t("control.pause", L), "ctrl:pause")])
+    if paused:
+        keyboard.append([btn(t("control.resume", L), "ctrl:resume")])
+    if printing or paused:
+        keyboard.append([btn(t("control.cancel", L), "ctrl:cancel")])
+
+    keyboard.append([
+        btn(t("control.home", L), "ctrl:home"),
+        btn(t("control.motors_off", L), "ctrl:motors_off"),
+    ])
+    keyboard.append([btn(t("btn.refresh", L), "menu:control"), btn(t("btn.back_menu", L), "menu:main")])
+
+    await q.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @auth_cb
 async def cb_print_ctrl(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    L = lang()
     user_id = uid(update)
 
     if await offline_guard(q, user_id):
         return
 
-    data = await api.get("/printer/objects/query?print_stats", user_id=user_id)
-    state = "unknown"
-    if data:
-        state = data.get("result", {}).get("status", {}).get("print_stats", {}).get("state", "unknown")
-
-    buttons = []
-    if state == "printing":
-        buttons.append([btn(t("ctrl.pause", L), "ctrl:pause")])
-        buttons.append([btn(t("ctrl.cancel", L), "ctrl:cancel")])
-    elif state == "paused":
-        buttons.append([btn(t("ctrl.resume", L), "ctrl:resume")])
-        buttons.append([btn(t("ctrl.cancel", L), "ctrl:cancel")])
-    else:
-        buttons.append([btn(t("ctrl.browse", L), "menu:files")])
-
-    buttons.append([btn(t("ctrl.home", L), "ctrl:home"), btn(t("ctrl.motors_off", L), "ctrl:motors_off")])
-    buttons.append([btn(t("btn.back_menu", L), "menu:main")])
-
-    await q.edit_message_text(
-        f"{printer_badge(user_id)}{t('ctrl.title', L)}\n\n{t('status.state', L)}: {state_icon(state)}",
-        reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode=ParseMode.MARKDOWN,
-    )
+    await _show_control(q, user_id)
 
 
 @auth_cb
 async def cb_ctrl_action(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
-    L = lang()
     user_id = uid(update)
+    await q.answer()
 
-    actions = {
-        "pause": (api.pause_print, t("ctrl.paused", L)),
-        "resume": (api.resume_print, t("ctrl.resumed", L)),
-        "home": (api.gcode, t("ctrl.homing", L)),
-        "motors_off": (api.gcode, t("ctrl.motors_disabled", L)),
-    }
+    if await offline_guard(q, user_id):
+        return
 
-    func, msg = actions.get(action, (None, None))
-    if func:
-        if action == "home":
-            r = await func("G28", user_id=user_id)
-        elif action == "motors_off":
-            r = await func("M84", user_id=user_id)
-        else:
-            r = await func(user_id=user_id)
-        await q.answer(msg if r else t("generic.failed", L), show_alert=True)
+    L = lang()
+    msg = ""
+    if action == "pause":
+        if await api.pause_print(user_id=user_id):
+            msg = t("control.paused", L)
+    elif action == "resume":
+        if await api.resume_print(user_id=user_id):
+            msg = t("control.resumed", L)
+    elif action == "home":
+        if await api.gcode("G28", user_id=user_id):
+            msg = t("control.homed", L)
+    elif action == "motors_off":
+        if await api.gcode("M18", user_id=user_id):
+            msg = t("control.motors_off_done", L)
 
-    await cb_print_ctrl(update, ctx)
+    await _show_control(q, user_id, msg=msg)
 
 
 @auth_cb
 async def cb_ctrl_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Ask for confirmation before cancelling."""
     q = update.callback_query
     await q.answer()
     L = lang()
-
+    keyboard = [
+        [
+            btn(t("control.cancel_yes", L), "ctrl_confirm:cancel"),
+            btn(t("control.cancel_no", L), "menu:control"),
+        ]
+    ]
     await q.edit_message_text(
-        t("ctrl.cancel_confirm", L),
-        reply_markup=InlineKeyboardMarkup([
-            [btn(t("ctrl.yes_cancel", L), "ctrl_confirm:cancel"), btn(t("ctrl.no_keep", L), "ctrl_confirm:keep")],
-        ]),
-        parse_mode=ParseMode.MARKDOWN,
+        t("control.cancel_confirm", L),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -90,13 +121,16 @@ async def cb_ctrl_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def cb_ctrl_confirm(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     action = q.data.split(":")[1]
-    L = lang()
     user_id = uid(update)
+    await q.answer()
 
+    if await offline_guard(q, user_id):
+        return
+
+    L = lang()
+    msg = ""
     if action == "cancel":
-        r = await api.cancel_print(user_id=user_id)
-        await q.answer(t("ctrl.cancelled", L) if r else t("generic.failed", L), show_alert=True)
-    else:
-        await q.answer("👍")
+        if await api.cancel_print(user_id=user_id):
+            msg = t("control.cancelled", L)
 
-    await cb_print_ctrl(update, ctx)
+    await _show_control(q, user_id, msg=msg)

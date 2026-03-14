@@ -1,128 +1,113 @@
 """Main menu — button grid entry point for all features."""
+from __future__ import annotations
 
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from telegram.constants import ParseMode
-from config import get as cfg, lang, is_multi_printer, active_printer_name
+from config import lang, is_multi_printer
 from lang import t
 from helpers import auth, auth_cb, btn, uid
-from monitor import is_printer_online
 
 
-def main_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    L = lang()
-    online = is_printer_online(user_id)
-
-    if not online:
-        # Stripped offline menu — only Status, Settings, Switch Printer, E-Stop
-        buttons = [
-            [btn(t("menu.status", L), "menu:status")],
-            [btn(t("menu.settings", L), "menu:settings")],
-        ]
-        if cfg().get("safety", {}).get("emergency_stop_enabled", True):
-            buttons.append([btn(t("menu.estop", L), "menu:estop")])
-        if is_multi_printer():
-            name = active_printer_name(user_id)
-            buttons.append([btn(f"🔀 {t('menu.switch_printer', L)} ({name})", "menu:printers")])
-        return InlineKeyboardMarkup(buttons)
-
-    buttons = [
+def _main_menu_keyboard(L: str) -> list:
+    rows = [
         [btn(t("menu.status", L), "menu:status"), btn(t("menu.temps", L), "menu:temps")],
-        [btn(t("menu.files", L), "menu:files"), btn(t("menu.print_ctrl", L), "menu:print_ctrl")],
-        [btn(t("menu.macros", L), "menu:macros"), btn(t("menu.gcode", L), "menu:gcode")],
+        [btn(t("menu.files", L), "menu:files"), btn(t("menu.control", L), "menu:control")],
+        [btn(t("menu.gcode", L), "menu:gcode"), btn(t("menu.macros", L), "menu:macros")],
         [btn(t("menu.camera", L), "menu:camera"), btn(t("menu.system", L), "menu:system")],
+        [btn(t("menu.estop", L), "menu:estop"), btn(t("menu.settings", L), "menu:settings")],
+        [btn(t("menu.adjust", L), "menu:adjust"), btn(t("menu.history", L), "menu:history")],
         [btn(t("menu.bed_mesh", L), "menu:bed_mesh")],
-        [btn(t("menu.settings", L), "menu:settings")],
     ]
-    if cfg().get("safety", {}).get("emergency_stop_enabled", True):
-        buttons.append([btn(t("menu.estop", L), "menu:estop")])
     if is_multi_printer():
-        name = active_printer_name(user_id)
-        buttons.append([btn(f"🔀 {t('menu.switch_printer', L)} ({name})", "menu:printers")])
-    return InlineKeyboardMarkup(buttons)
-
-
-def main_menu_text(user_id: int) -> str:
-    L = lang()
-    online = is_printer_online(user_id)
-    if not online:
-        title = f"⚫ {t('menu.title', L)}"
-    else:
-        title = t("menu.title", L)
-    if is_multi_printer():
-        name = active_printer_name(user_id)
-        title = f"🖨️ *{name}*\n\n{title}"
-    return title
+        rows.append([btn(t("menu.printers", L), "menu:printers")])
+    return rows
 
 
 @auth
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user_id = uid(update)
+    L = lang()
     await update.message.reply_text(
-        main_menu_text(user_id),
-        reply_markup=main_menu_keyboard(user_id),
-        parse_mode=ParseMode.MARKDOWN,
+        t("menu.welcome", L),
+        reply_markup=InlineKeyboardMarkup(_main_menu_keyboard(L)),
     )
 
 
 @auth
 async def cmd_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await cmd_start(update, ctx)
-
-
-async def show_menu(query, user_id: int = None):
-    """Edit a callback query message back to the main menu."""
-    if user_id is None:
-        user_id = query.from_user.id
-    await query.edit_message_text(
-        main_menu_text(user_id),
-        reply_markup=main_menu_keyboard(user_id),
-        parse_mode=ParseMode.MARKDOWN,
+    L = lang()
+    await update.message.reply_text(
+        t("menu.title", L),
+        reply_markup=InlineKeyboardMarkup(_main_menu_keyboard(L)),
     )
 
 
 @auth_cb
 async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Routes all menu:* callbacks to the correct handler."""
+    """Route menu:* callbacks to the correct handler."""
     q = update.callback_query
-    target = q.data.split(":")[1]
+    await q.answer()
+    action = q.data.split(":")[1]
+    user_id = uid(update)
 
-    # Lazy imports to avoid circular dependencies
     from handlers.status import cb_status
     from handlers.temps import cb_temps
     from handlers.files import cb_files
     from handlers.control import cb_print_ctrl
-    from handlers.macros import cb_macros
-    from handlers.gcode import cb_gcode_entry
     from handlers.camera import cb_camera
+    from handlers.macros import cb_macros
     from handlers.system import cb_system
-    from handlers.settings import cb_settings
     from handlers.estop import cb_estop
+    from handlers.settings import cb_settings
     from handlers.printers import cb_printers
     from handlers.adjust import cb_adjust
     from handlers.bed_mesh import cb_bed_mesh
     from handlers.history import cb_history
 
-    routes = {
-        "main": lambda: show_menu(q, uid(update)),
-        "status": lambda: cb_status(update, ctx),
-        "temps": lambda: cb_temps(update, ctx),
-        "files": lambda: cb_files(update, ctx),
-        "print_ctrl": lambda: cb_print_ctrl(update, ctx),
-        "macros": lambda: cb_macros(update, ctx),
-        "gcode": lambda: cb_gcode_entry(update, ctx),
-        "camera": lambda: cb_camera(update, ctx),
-        "system": lambda: cb_system(update, ctx),
-        "settings": lambda: cb_settings(update, ctx),
-        "estop": lambda: cb_estop(update, ctx),
-        "printers": lambda: cb_printers(update, ctx),
-        "adjust": lambda: cb_adjust(update, ctx),
-        "bed_mesh": lambda: cb_bed_mesh(update, ctx),
-        "history": lambda: cb_history(update, ctx),
+    dispatch = {
+        "main": lambda u, c: _back_to_main(q, user_id),
+        "status": cb_status,
+        "temps": cb_temps,
+        "files": lambda u, c: cb_files_page(u, c),
+        "control": cb_print_ctrl,
+        "camera": cb_camera,
+        "macros": lambda u, c: cb_macros_page(u, c),
+        "system": cb_system,
+        "estop": cb_estop,
+        "settings": cb_settings,
+        "printers": cb_printers,
+        "adjust": cb_adjust,
+        "bed_mesh": cb_bed_mesh,
+        "history": cb_history,
     }
 
-    handler = routes.get(target)
+    handler = dispatch.get(action)
     if handler:
-        await handler()
+        await handler(update, ctx)
     else:
-        await q.answer("Unknown")
+        L = lang()
+        await q.edit_message_text(
+            t("menu.title", L),
+            reply_markup=InlineKeyboardMarkup(_main_menu_keyboard(L)),
+        )
+
+
+async def _back_to_main(q, user_id: int):
+    L = lang()
+    await q.edit_message_text(
+        t("menu.title", L),
+        reply_markup=InlineKeyboardMarkup(_main_menu_keyboard(L)),
+    )
+
+
+async def cb_files_page(update, ctx):
+    """Wrapper: redirect menu:files → files:page:0:date"""
+    update.callback_query.data = "files:page:0:date"
+    from handlers.files import cb_files
+    await cb_files(update, ctx)
+
+
+async def cb_macros_page(update, ctx):
+    """Wrapper: redirect menu:macros → macros:page:0"""
+    update.callback_query.data = "macros:page:0"
+    from handlers.macros import cb_macros
+    await cb_macros(update, ctx)
