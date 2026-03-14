@@ -10,15 +10,32 @@ from helpers import auth_cb, btn, uid, offline_guard
 import api
 
 
+# Color blocks from low (blue/cold) → level (green) → high (red/hot)
+_HEAT = ["🟦", "🟦", "🟩", "🟩", "🟨", "🟨", "🟧", "🟧", "🟥", "🟥"]
+
+
+def _val_to_block(val: float, lo: float, hi: float) -> str:
+    """Map a mesh probe value to a colored block emoji."""
+    span = hi - lo
+    if span == 0:
+        return "🟩"  # perfectly flat
+    ratio = (val - lo) / span  # 0.0 → 1.0
+    idx = min(int(ratio * len(_HEAT)), len(_HEAT) - 1)
+    return _HEAT[idx]
+
+
 def _visualize_mesh(matrix: list) -> str:
-    """Render a 2D mesh matrix as a compact text heatmap."""
+    """Render a 2D mesh matrix as a colored block heatmap."""
     if not matrix:
         return ""
 
+    # Flatten to find range
+    flat = [v for row in matrix for v in row]
+    lo, hi = min(flat), max(flat)
+
     lines = []
     for row in matrix:
-        row_str = "  ".join(f"{v:+.3f}" for v in row)
-        lines.append(row_str)
+        lines.append("".join(_val_to_block(v, lo, hi) for v in row))
     return "\n".join(lines)
 
 
@@ -70,9 +87,9 @@ async def cb_bed_mesh(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         cols = len(probed_matrix[0]) if probed_matrix else 0
         mesh_info_lines.append(f"Grid: {rows}×{cols}")
         mesh_info_lines.append("")
-        mesh_info_lines.append("```")
         mesh_info_lines.append(_visualize_mesh(probed_matrix))
-        mesh_info_lines.append("```")
+        mesh_info_lines.append("")
+        mesh_info_lines.append("🟦🟩🟨🟧🟥 low → high")
     else:
         mesh_info_lines.append("")
         mesh_info_lines.append(t("mesh.no_data", L))
