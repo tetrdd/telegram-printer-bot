@@ -32,9 +32,13 @@ def _build_status_text(res: dict, user_id: int) -> str:
     gcode_move = res.get("gcode_move", {})
     fan = res.get("fan", {})
 
+    display = res.get("display_status", {})
+
     state = stats.get("state", "unknown")
     filename = stats.get("filename", "—") or "—"
-    pct = vsd.get("progress", 0) * 100
+    # display_status.progress = slicer-estimated (M73), much more accurate
+    # virtual_sdcard.progress = file-position based (unreliable)
+    pct = display.get("progress", vsd.get("progress", 0)) * 100
     duration = stats.get("print_duration", 0)
     filament = stats.get("filament_used", 0) / 1000  # mm → m
 
@@ -122,7 +126,8 @@ def _build_offline_status_text(cached: dict, cached_at: float, user_id: int) -> 
 
         state = stats.get("state", "unknown")
         filename = stats.get("filename", "—") or "—"
-        pct = vsd.get("progress", 0) * 100
+        display = cached.get("display_status", {})
+        pct = display.get("progress", vsd.get("progress", 0)) * 100
 
         lines.append(f"{t('status.state', L)}: {state_icon(state)}")
         lines.append(f"{t('status.file', L)}: `{filename}`")

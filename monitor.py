@@ -162,8 +162,9 @@ class PrintMonitor:
 
         # ── Progress milestones ──────────────────────────────────────────
         if state == "printing" and cfg().get("notifications", {}).get("on_progress_milestone", True):
+            display = res.get("display_status", {})
             vsd = res.get("virtual_sdcard", {})
-            pct = (vsd.get("progress", 0)) * 100
+            pct = display.get("progress", vsd.get("progress", 0)) * 100
             await self._check_milestone(ps, pct, filename, res)
 
         # ── Temperature alert ────────────────────────────────────────────
