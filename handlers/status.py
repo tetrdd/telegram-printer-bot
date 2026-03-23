@@ -57,10 +57,17 @@ def _build_status_text(res: dict, user_id: int) -> str:
 
     eta_str = "—"
     clock_eta_str = "—"
-    if pct > 1 and state == "printing":
-        remaining = (duration / (pct / 100)) - duration
-        eta_str = f"~{fmt_duration(remaining)}"
-        clock_eta_str = fmt_clock_eta(remaining)
+    if state == "printing":
+        # Pull ETA from display_status (M73) if available, as it is much more accurate (slicer-based)
+        remaining = display.get("remaining_time")
+        if remaining is None:
+            # Fallback to duration-based estimate if slicer didn't provide M73
+            if pct > 1:
+                remaining = (duration / (pct / 100)) - duration
+
+        if remaining is not None and remaining > 0:
+            eta_str = f"~{fmt_duration(remaining)}"
+            clock_eta_str = fmt_clock_eta(remaining)
 
     # Layers
     info = stats.get("info", {})
