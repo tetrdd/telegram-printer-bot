@@ -30,10 +30,13 @@ async def cb_macros(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             page = 0
 
     objects = await api.printer_objects(user_id=user_id)
+    macro_cfg = cfg().get("macros", {})
+    hidden = macro_cfg.get("hidden", [])
+
     macros = sorted([
         obj.replace("gcode_macro ", "")
         for obj in objects
-        if obj.startswith("gcode_macro ") and not obj.startswith("gcode_macro _")
+        if obj.startswith("gcode_macro ") and not obj.startswith("gcode_macro _") and obj.replace("gcode_macro ", "") not in hidden
     ])
 
     if not macros:
@@ -45,7 +48,6 @@ async def cb_macros(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
 
     # Read config: aliases and per_page
-    macro_cfg = cfg().get("macros", {})
     aliases = macro_cfg.get("aliases", {})
     per_page = macro_cfg.get("per_page", 8)
 
@@ -55,12 +57,20 @@ async def cb_macros(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     # Build buttons using aliases when available
     buttons = []
+    no_confirm = macro_cfg.get("no_confirm", [])
     for m in page_macros:
         label = aliases.get(m, m)
         # Keep button label reasonably short
         if len(label) > 30:
             label = label[:27] + "..."
-        buttons.append(btn(label, f"macro:run_ask:{m}"))
+
+        # Check if needs confirmation
+        if m in no_confirm:
+            pattern = f"macro:run:{m}"
+        else:
+            pattern = f"macro:run_ask:{m}"
+
+        buttons.append(btn(label, pattern))
 
     kb = grid(buttons, cols=2)
 

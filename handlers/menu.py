@@ -13,6 +13,7 @@ from monitor import is_printer_online
 def main_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     L = lang()
     online = is_printer_online(user_id)
+    c = cfg()
 
     if not online:
         # Stripped offline menu — only Status, Settings, Switch Printer, E-Stop
@@ -20,22 +21,32 @@ def main_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
             [btn(t("menu.status", L), "menu:status")],
             [btn(t("menu.settings", L), "menu:settings")],
         ]
-        if cfg().get("safety", {}).get("emergency_stop_enabled", True):
+        if c.get("safety", {}).get("emergency_stop_enabled", True):
             buttons.append([btn(t("menu.estop", L), "menu:estop")])
         if is_multi_printer():
             name = active_printer_name(user_id)
             buttons.append([btn(f"🔀 {t('menu.switch_printer', L)} ({name})", "menu:printers")])
         return InlineKeyboardMarkup(buttons)
 
+    # Respect camera visibility
+    show_camera = c.get("camera", {}).get("show_in_menu", True)
+
     buttons = [
         [btn(t("menu.status", L), "menu:status"), btn(t("menu.temps", L), "menu:temps")],
         [btn(t("menu.files", L), "menu:files"), btn(t("menu.print_ctrl", L), "menu:print_ctrl")],
         [btn(t("menu.macros", L), "menu:macros"), btn(t("menu.gcode", L), "menu:gcode")],
-        [btn(t("menu.camera", L), "menu:camera"), btn(t("menu.system", L), "menu:system")],
-        [btn(t("menu.bed_mesh", L), "menu:bed_mesh")],
-        [btn(t("menu.settings", L), "menu:settings")],
     ]
-    if cfg().get("safety", {}).get("emergency_stop_enabled", True):
+
+    second_row = []
+    if show_camera:
+        second_row.append(btn(t("menu.camera", L), "menu:camera"))
+    second_row.append(btn(t("menu.system", L), "menu:system"))
+    buttons.append(second_row)
+
+    buttons.append([btn(t("menu.bed_mesh", L), "menu:bed_mesh"), btn(t("menu.filament", L), "menu:filament")])
+    buttons.append([btn(t("menu.settings", L), "menu:settings")])
+
+    if c.get("safety", {}).get("emergency_stop_enabled", True):
         buttons.append([btn(t("menu.estop", L), "menu:estop")])
     if is_multi_printer():
         name = active_printer_name(user_id)
@@ -103,6 +114,7 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     from handlers.adjust import cb_adjust
     from handlers.bed_mesh import cb_bed_mesh
     from handlers.history import cb_history
+    from handlers.filament import cb_filament_menu
 
     routes = {
         "main": lambda: show_menu(q, uid(update)),
@@ -120,6 +132,7 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "adjust": lambda: cb_adjust(update, ctx),
         "bed_mesh": lambda: cb_bed_mesh(update, ctx),
         "history": lambda: cb_history(update, ctx),
+        "filament": lambda: cb_filament_menu(update, ctx),
     }
 
     handler = routes.get(target)

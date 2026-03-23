@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from telegram import Update, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 from config import lang
 from lang import t
-from helpers import auth_cb, btn, uid, offline_guard
+from helpers import auth, auth_cb, btn, uid, offline_guard
 import api
+
+ADJUST_VALUE_INPUT = 600
 
 
 async def _show_adjust(q, user_id: int, msg: str = ""):
@@ -68,6 +70,12 @@ async def _show_adjust(q, user_id: int, msg: str = ""):
             btn("🌀50%", "adjust:fan:50"),
             btn("🌀75%", "adjust:fan:75"),
             btn("🌀100%", "adjust:fan:100"),
+        ],
+        # Custom input
+        [
+            btn(t("adjust.custom_speed", L), "adjust_custom:speed"),
+            btn(t("adjust.custom_flow", L), "adjust_custom:flow"),
+            btn(t("adjust.custom_fan", L), "adjust_custom:fan"),
         ],
         # Z-offset adjustment
         [
@@ -176,3 +184,75 @@ async def cb_adjust_z(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         msg = f"Z {sign}{offset:.3f}mm" if r else ""
 
     await _show_adjust(q, user_id, msg=msg)
+
+
+# ── Custom adjustment input (conversation handlers) ─────────────────────────
+
+@auth_cb
+async def cb_adjust_custom_ask(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    param = q.data[len("adjust_custom:"):]
+    await q.answer()
+    L = lang()
+
+    ctx.user_data["editing_adjust"] = param
+
+    labels = {
+        "speed": t("adjust.speed", L).split(":")[0],
+        "flow": t("adjust.flow", L).split(":")[0],
+        "fan": t("adjust.fan", L).split(":")[0],
+    }
+
+    await q.edit_message_text(
+        t("adjust.prompt_pct", L).format(name=labels.get(param, param)),
+        reply_markup=InlineKeyboardMarkup([[btn(t("btn.cancel", L), "adjust_cancel")]]),
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    return ADJUST_VALUE_INPUT
+
+
+@auth_cb
+async def cb_adjust_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    user_id = uid(update)
+    ctx.user_data.pop("editing_adjust", None)
+    await _show_adjust(q, user_id)
+    return ConversationHandler.END
+
+
+@auth
+async def handle_adjust_value_input(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    param = ctx.user_data.get("editing_adjust")
+    if not param:
+        return ConversationHandler.END
+
+    user_id = uid(update)
+    L = lang()
+
+    try:
+        val = int(text)
+        if not 0 <= val <= 500: # Safe limit
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text("❌ Enter a number between 0 and 500.")
+        return ADJUST_VALUE_INPUT
+
+    r = False
+    if param == "speed":
+        r = await api.set_speed_factor(val, user_id=user_id)
+    elif param == "flow":
+        r = await api.set_flow_factor(val, user_id=user_id)
+    elif param == "fan":
+        r = await api.set_fan_speed(val, user_id=user_id)
+
+    if r:
+        await update.message.reply_text(
+            t("generic.done", L),
+            reply_markup=InlineKeyboardMarkup([[btn(t("adjust.btn", L), "menu:adjust"), btn(t("btn.back_menu", L), "menu:main")]]),
+        )
+    else:
+        await update.message.reply_text(t("generic.failed", L))
+
+    return ConversationHandler.END

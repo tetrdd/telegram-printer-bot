@@ -4,7 +4,7 @@ from __future__ import annotations
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
-from config import lang
+from config import lang, get as cfg
 from lang import t
 from helpers import auth, auth_cb, btn, uid, offline_guard
 import api
@@ -22,17 +22,24 @@ async def cb_gcode_entry(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if await offline_guard(q, user_id):
         return GCODE_INPUT
 
-    quick = [
+    # Default buttons
+    buttons = [
         [btn("G28 Home", "gcode_quick:G28"), btn("G90 Absolute", "gcode_quick:G90")],
         [btn("G91 Relative", "gcode_quick:G91"), btn("M84 Motors Off", "gcode_quick:M84")],
         [btn("M106 S255 Fan 100%", "gcode_quick:M106 S255")],
         [btn("M107 Fan Off", "gcode_quick:M107")],
-        [btn(t("btn.back_menu", L), "menu:main")],
     ]
+
+    # Custom buttons from config
+    custom_btns = cfg().get("gcode", {}).get("buttons", [])
+    for b in custom_btns:
+        buttons.append([btn(b['label'], f"gcode_quick:{b['cmd']}")])
+
+    buttons.append([btn(t("btn.back_menu", L), "menu:main")])
 
     await q.edit_message_text(
         t("gcode.title", L),
-        reply_markup=InlineKeyboardMarkup(quick),
+        reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN,
     )
     return GCODE_INPUT

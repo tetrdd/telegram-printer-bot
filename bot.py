@@ -60,13 +60,86 @@ def main():
     from handlers.camera import cb_camera, cb_snapshot_action, cb_snapshot_inline
     from handlers.system import cb_system, cb_sys_action, cb_sys_confirm
     from handlers.estop import cb_estop, cb_estop_confirm
-    from handlers.settings import cb_settings, cb_setting_toggle
+    from handlers.settings import cb_settings, cb_setting_toggle, cb_settings_category, cb_set_lang
     from handlers.printers import cb_printers, cb_printer_select, cb_printer_status_all
-    from handlers.adjust import cb_adjust, cb_adjust_speed, cb_adjust_flow, cb_adjust_fan, cb_adjust_z
+    from handlers.adjust import (
+        cb_adjust, cb_adjust_speed, cb_adjust_flow, cb_adjust_fan, cb_adjust_z,
+        cb_adjust_custom_ask, cb_adjust_cancel, handle_adjust_value_input, ADJUST_VALUE_INPUT
+    )
     from handlers.bed_mesh import cb_bed_mesh
     from handlers.history import cb_history, cb_history_page
+    from handlers.filament import cb_filament_menu, cb_filament_action
+
+    # New settings handlers
+    from handlers.settings_macros import (
+        cb_macro_settings_router, cb_macro_toggle_hide, cb_macro_toggle_confirm,
+        cb_macro_edit_alias, handle_macro_alias_input, cb_macro_alias_cancel, cb_macro_alias_reset,
+        MACRO_ALIAS_INPUT
+    )
+    from handlers.settings_temps import (
+        cb_temp_presets_list, cb_temp_preset_edit_ask, cb_temp_preset_del,
+        cb_temp_preset_add_ask, cb_temp_preset_cancel, handle_temp_value_input, TEMP_VALUE_INPUT
+    )
+    from handlers.settings_gcode import (
+        cb_gcode_btn_edit_ask, cb_gcode_btn_del, cb_gcode_btn_add_ask,
+        cb_gcode_btn_cancel, handle_gcode_button_input, GCODE_BUTTON_INPUT
+    )
+    from handlers.settings_camera import cb_camera_toggle_menu
 
     # ── Conversation handlers (registered first for priority) ────────────
+    macro_alias_conv = ConversationHandler(
+        entry_points=[CallbackQueryHandler(cb_macro_edit_alias, pattern=r"^macro_edit_alias:")],
+        states={
+            MACRO_ALIAS_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_macro_alias_input)],
+        },
+        fallbacks=[
+            CallbackQueryHandler(cb_macro_alias_cancel, pattern=r"^macro_alias_cancel$"),
+            CallbackQueryHandler(cb_macro_alias_reset, pattern=r"^macro_alias_reset:"),
+            CallbackQueryHandler(cb_menu_router, pattern=r"^menu:"),
+        ],
+        per_message=False,
+    )
+
+    temp_preset_conv = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(cb_temp_preset_edit_ask, pattern=r"^temp_preset_edit:"),
+            CallbackQueryHandler(cb_temp_preset_add_ask, pattern=r"^temp_preset_add:"),
+        ],
+        states={
+            TEMP_VALUE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_temp_value_input)],
+        },
+        fallbacks=[
+            CallbackQueryHandler(cb_temp_preset_cancel, pattern=r"^temp_preset_cancel$"),
+            CallbackQueryHandler(cb_temp_preset_del, pattern=r"^temp_preset_del:"),
+            CallbackQueryHandler(cb_menu_router, pattern=r"^menu:"),
+        ],
+        per_message=False,
+    )
+
+    gcode_btn_conv = ConversationHandler(
+        entry_points=[CallbackQueryHandler(cb_gcode_btn_add_ask, pattern=r"^gcode_btn_add$")],
+        states={
+            GCODE_BUTTON_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_gcode_button_input)],
+        },
+        fallbacks=[
+            CallbackQueryHandler(cb_gcode_btn_cancel, pattern=r"^gcode_btn_cancel$"),
+            CallbackQueryHandler(cb_menu_router, pattern=r"^menu:"),
+        ],
+        per_message=False,
+    )
+
+    adjust_custom_conv = ConversationHandler(
+        entry_points=[CallbackQueryHandler(cb_adjust_custom_ask, pattern=r"^adjust_custom:")],
+        states={
+            ADJUST_VALUE_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_adjust_value_input)],
+        },
+        fallbacks=[
+            CallbackQueryHandler(cb_adjust_cancel, pattern=r"^adjust_cancel$"),
+            CallbackQueryHandler(cb_menu_router, pattern=r"^menu:"),
+        ],
+        per_message=False,
+    )
+
     gcode_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_gcode_entry, pattern=r"^menu:gcode$")],
         states={
@@ -113,6 +186,10 @@ def main():
         per_message=False,
     )
 
+    app.add_handler(macro_alias_conv)
+    app.add_handler(temp_preset_conv)
+    app.add_handler(gcode_btn_conv)
+    app.add_handler(adjust_custom_conv)
     app.add_handler(gcode_conv)
     app.add_handler(temp_hotend_conv)
     app.add_handler(temp_bed_conv)
@@ -177,7 +254,22 @@ def main():
     # History
     app.add_handler(CallbackQueryHandler(cb_history_page, pattern=r"^history:page:"))
 
-    # Settings (must be last — catches all set:* patterns)
+    # Filament
+    app.add_handler(CallbackQueryHandler(cb_filament_action, pattern=r"^filament:action:"))
+
+    # Settings
+    app.add_handler(CallbackQueryHandler(cb_settings_category, pattern=r"^set_cat:"))
+    app.add_handler(CallbackQueryHandler(cb_set_lang, pattern=r"^set_lang:"))
+    app.add_handler(CallbackQueryHandler(cb_macro_settings_router, pattern=r"^set_macros:"))
+    app.add_handler(CallbackQueryHandler(cb_macro_toggle_hide, pattern=r"^macro_toggle_hide:"))
+    app.add_handler(CallbackQueryHandler(cb_macro_toggle_confirm, pattern=r"^macro_toggle_confirm:"))
+    app.add_handler(CallbackQueryHandler(cb_temp_presets_list, pattern=r"^set_temps:"))
+    app.add_handler(CallbackQueryHandler(cb_temp_preset_del, pattern=r"^temp_preset_del:"))
+    app.add_handler(CallbackQueryHandler(cb_gcode_btn_edit_ask, pattern=r"^gcode_btn_edit:"))
+    app.add_handler(CallbackQueryHandler(cb_gcode_btn_del, pattern=r"^gcode_btn_del:"))
+    app.add_handler(CallbackQueryHandler(cb_camera_toggle_menu, pattern=r"^camera_toggle_menu$"))
+
+    # Settings boolean toggle (must be last — catches all set:* patterns)
     app.add_handler(CallbackQueryHandler(cb_setting_toggle, pattern=r"^set:"))
 
     # ── Lifecycle hooks ──────────────────────────────────────────────────

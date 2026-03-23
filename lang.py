@@ -1,5 +1,5 @@
 """
-Multi-language support — English, German, Russian, Polish.
+Multi-language support — English, German, Russian, Polish, French, Spanish, Italian.
 All UI strings live here. Access via t("key", lang).
 """
 from __future__ import annotations
@@ -11,84 +11,135 @@ STRINGS = {
         "de": "🖨️ *Druckersteuerung*\n\nWähle eine Option:",
         "ru": "🖨️ *Управление принтером*\n\nВыберите действие:",
         "pl": "🖨️ *Sterowanie drukarką*\n\nWybierz opcję:",
+        "fr": "🖨️ *Contrôle de l'imprimante*\n\nChoisissez une option:",
+        "es": "🖨️ *Control de la impresora*\n\nElija una opción:",
+        "it": "🖨️ *Controllo stampante*\n\nScegli un'opzione:",
     },
     "menu.status": {
         "en": "📊 Status",
         "de": "📊 Status",
         "ru": "📊 Статус",
         "pl": "📊 Status",
+        "fr": "📊 Statut",
+        "es": "📊 Estado",
+        "it": "📊 Stato",
     },
     "menu.temps": {
         "en": "🌡️ Temperatures",
         "de": "🌡️ Temperaturen",
         "ru": "🌡️ Температуры",
         "pl": "🌡️ Temperatury",
+        "fr": "🌡️ Températures",
+        "es": "🌡️ Temperaturas",
+        "it": "🌡️ Temperature",
     },
     "menu.files": {
         "en": "📂 Files",
         "de": "📂 Dateien",
         "ru": "📂 Файлы",
         "pl": "📂 Pliki",
+        "fr": "📂 Fichiers",
+        "es": "📂 Archivos",
+        "it": "📂 File",
     },
     "menu.print_ctrl": {
         "en": "🖨️ Print Control",
         "de": "🖨️ Drucksteuerung",
         "ru": "🖨️ Управление печатью",
         "pl": "🖨️ Sterowanie drukiem",
+        "fr": "🖨️ Contrôle d'impression",
+        "es": "🖨️ Control de impresión",
+        "it": "🖨️ Controllo stampa",
     },
     "menu.macros": {
         "en": "⚡ Macros",
         "de": "⚡ Makros",
         "ru": "⚡ Макросы",
         "pl": "⚡ Makra",
+        "fr": "⚡ Macros",
+        "es": "⚡ Macros",
+        "it": "⚡ Macro",
     },
     "menu.gcode": {
         "en": "💻 GCode Console",
         "de": "💻 GCode-Konsole",
         "ru": "💻 Консоль GCode",
         "pl": "💻 Konsola GCode",
+        "fr": "💻 Console GCode",
+        "es": "💻 Consola GCode",
+        "it": "💻 Console GCode",
     },
     "menu.camera": {
         "en": "📷 Camera",
         "de": "📷 Kamera",
         "ru": "📷 Камера",
         "pl": "📷 Kamera",
+        "fr": "📷 Caméra",
+        "es": "📷 Cámara",
+        "it": "📷 Fotocamera",
     },
     "menu.system": {
         "en": "🔧 System",
         "de": "🔧 System",
         "ru": "🔧 Система",
         "pl": "🔧 System",
+        "fr": "🔧 Système",
+        "es": "🔧 Sistema",
+        "it": "🔧 Sistema",
     },
     "menu.settings": {
         "en": "⚙️ Settings",
         "de": "⚙️ Einstellungen",
         "ru": "⚙️ Настройки",
         "pl": "⚙️ Ustawienia",
+        "fr": "⚙️ Paramètres",
+        "es": "⚙️ Ajustes",
+        "it": "⚙️ Impostazioni",
     },
     "menu.estop": {
         "en": "🚨 EMERGENCY STOP",
         "de": "🚨 NOT-HALT",
         "ru": "🚨 АВАРИЙНАЯ ОСТАНОВКА",
         "pl": "🚨 ZATRZYMANIE AWARYJNE",
+        "fr": "🚨 ARRÊT D'URGENCE",
+        "es": "🚨 PARADA DE EMERGENCIA",
+        "it": "🚨 ARRESTO DI EMERGENZA",
     },
     "menu.switch_printer": {
         "en": "Switch Printer",
         "de": "Drucker wechseln",
         "ru": "Сменить принтер",
         "pl": "Zmień drukarkę",
+        "fr": "Changer d'imprimante",
+        "es": "Cambiar impresora",
+        "it": "Cambia stampante",
     },
     "menu.adjust": {
         "en": "🔧 Adjust",
         "de": "🔧 Anpassen",
         "ru": "🔧 Настройка",
         "pl": "🔧 Dostosuj",
+        "fr": "🔧 Ajuster",
+        "es": "🔧 Ajustar",
+        "it": "🔧 Regola",
     },
     "menu.bed_mesh": {
         "en": "📐 Bed Mesh",
         "de": "📐 Bett-Mesh",
         "ru": "📐 Сетка стола",
         "pl": "📐 Siatka stołu",
+        "fr": "📐 Maillage du lit",
+        "es": "📐 Malla de la cama",
+        "it": "📐 Mesh del letto",
+    },
+    "menu.filament": {
+        "en": "🔄 Filament",
+        "de": "🔄 Filament",
+        "ru": "🔄 Филамент",
+        "pl": "🔄 Filament",
+        "fr": "🔄 Filament",
+        "es": "🔄 Filamento",
+        "it": "🔄 Filamento",
     },
 
     # ── Common ───────────────────────────────────────────────────────────
@@ -97,24 +148,36 @@ STRINGS = {
         "de": "🔙 Menü",
         "ru": "🔙 Меню",
         "pl": "🔙 Menu",
+        "fr": "🔙 Menu",
+        "es": "🔙 Menú",
+        "it": "🔙 Menu",
     },
     "btn.refresh": {
         "en": "🔄 Refresh",
         "de": "🔄 Aktualisieren",
         "ru": "🔄 Обновить",
         "pl": "🔄 Odśwież",
+        "fr": "🔄 Actualiser",
+        "es": "🔄 Refrescar",
+        "it": "🔄 Aggiorna",
     },
     "btn.cancel": {
         "en": "❌ Cancel",
         "de": "❌ Abbrechen",
         "ru": "❌ Отмена",
         "pl": "❌ Anuluj",
+        "fr": "❌ Annuler",
+        "es": "❌ Cancelar",
+        "it": "❌ Annulla",
     },
     "btn.snapshot": {
         "en": "📷 Snapshot",
         "de": "📷 Foto",
         "ru": "📷 Снимок",
         "pl": "📷 Zdjęcie",
+        "fr": "📷 Capture",
+        "es": "📷 Captura",
+        "it": "📷 Istantanea",
     },
     "err.no_connect": {
         "en": "❌ Cannot connect to printer.",
@@ -388,6 +451,18 @@ STRINGS = {
         "ru": "🔙 Температуры",
         "pl": "🔙 Temperatury",
     },
+    "temps.invalid_hotend": {
+        "en": "❌ Enter a number between 0 and 300.",
+        "de": "❌ Gib eine Zahl zwischen 0 und 300 ein.",
+        "ru": "❌ Введите число от 0 до 300.",
+        "pl": "❌ Wpisz liczbę od 0 do 300.",
+    },
+    "temps.invalid_bed": {
+        "en": "❌ Enter a number between 0 and 120.",
+        "de": "❌ Gib eine Zahl zwischen 0 und 120 ein.",
+        "ru": "❌ Введите число от 0 до 120.",
+        "pl": "❌ Wpisz liczbę od 0 do 120.",
+    },
 
     # ── Print Control ────────────────────────────────────────────────────
     "ctrl.title": {
@@ -448,7 +523,7 @@ STRINGS = {
         "en": "❌ No, keep printing",
         "de": "❌ Nein, weiterdrucken",
         "ru": "❌ Нет, продолжить",
-        "pl": "❌ Nie, kontynuuj druk",
+        "pl": "❌ No, kontynuuj druk",
     },
     "ctrl.paused": {
         "en": "⏸️ Paused",
@@ -644,7 +719,7 @@ STRINGS = {
         "en": "📷 *Camera*\n\nNo camera configured.\n\nSet `snapshot_url` in config.yaml.",
         "de": "📷 *Kamera*\n\nKeine Kamera konfiguriert.\n\n`snapshot_url` in config.yaml setzen.",
         "ru": "📷 *Камера*\n\nКамера не настроена.\n\nУстановите `snapshot_url` в config.yaml.",
-        "pl": "📷 *Kamera*\n\nKamera nie skonfigurowana.\n\nUstaw `snapshot_url` w config.yaml.",
+        "pl": "📷 *Kamera*\n\nKamera nie skonfigurowana.\n\nUstaw `snapshot_url` in config.yaml.",
     },
     "camera.snapshot": {
         "en": "📷 Camera Snapshot",
@@ -813,6 +888,22 @@ STRINGS = {
         "de": "📐 Z Zurücksetzen",
         "ru": "📐 Z Сброс",
         "pl": "📐 Z Reset",
+    },
+    "adjust.custom_speed": {
+        "en": "✏️ Custom Speed",
+        "de": "✏️ Manuelle Geschwindigkeit",
+    },
+    "adjust.custom_flow": {
+        "en": "✏️ Custom Flow",
+        "de": "✏️ Manueller Fluss",
+    },
+    "adjust.custom_fan": {
+        "en": "✏️ Custom Fan",
+        "de": "✏️ Manueller Lüfter",
+    },
+    "adjust.prompt_pct": {
+        "en": "✏️ *{name}*\n\nEnter percentage (e.g. 100):",
+        "de": "✏️ *{name}*\n\nGib den Prozentsatz ein (z.B. 100):",
     },
 
     # ── Bed Mesh ─────────────────────────────────────────────────────────
@@ -991,10 +1082,10 @@ STRINGS = {
 
     # ── Settings ─────────────────────────────────────────────────────────
     "settings.title": {
-        "en": "⚙️ *Settings*\n\nTap to toggle or cycle values:",
-        "de": "⚙️ *Einstellungen*\n\nTippe zum Umschalten:",
-        "ru": "⚙️ *Настройки*\n\nНажмите для переключения:",
-        "pl": "⚙️ *Ustawienia*\n\nKliknij, aby przełączyć:",
+        "en": "⚙️ *Settings*\n\nChoose a category:",
+        "de": "⚙️ *Einstellungen*\n\nWähle eine Kategorie:",
+        "ru": "⚙️ *Настройки*\n\nВыберите категорию:",
+        "pl": "⚙️ *Ustawienia*\n\nWybierz kategorię:",
     },
     "settings.print_complete": {
         "en": "Print Complete",
@@ -1067,6 +1158,177 @@ STRINGS = {
         "de": "🌐 Sprache: Deutsch",
         "ru": "🌐 Язык: Русский",
         "pl": "🌐 Język: Polski",
+    },
+
+    # ── Settings Categories ──────────────────────────────────────────────
+    "settings.cat_general": {
+        "en": "⚙️ General",
+        "de": "⚙️ Allgemein",
+        "ru": "⚙️ Общие",
+        "pl": "⚙️ Ogólne",
+        "fr": "⚙️ Général",
+        "es": "⚙️ General",
+        "it": "⚙️ Generale",
+    },
+    "settings.cat_notif": {
+        "en": "🔔 Notifications",
+        "de": "🔔 Benachrichtigungen",
+        "ru": "🔔 Уведомления",
+        "pl": "🔔 Powiadomienia",
+        "fr": "🔔 Notifications",
+        "es": "🔔 Notificaciones",
+        "it": "🔔 Notifiche",
+    },
+    "settings.cat_macros": {
+        "en": "⚡ Macros",
+        "de": "⚡ Makros",
+        "ru": "⚡ Макросы",
+        "pl": "⚡ Makra",
+        "fr": "⚡ Macros",
+        "es": "⚡ Macros",
+        "it": "⚡ Macro",
+    },
+    "settings.cat_temps": {
+        "en": "🌡️ Temperatures",
+        "de": "🌡️ Temperaturen",
+        "ru": "🌡️ Температуры",
+        "pl": "🌡️ Temperatury",
+        "fr": "🌡️ Températures",
+        "es": "🌡️ Temperaturas",
+        "it": "🌡️ Temperature",
+    },
+    "settings.cat_gcode": {
+        "en": "💻 GCode Console",
+        "de": "💻 GCode-Konsole",
+        "ru": "💻 Консоль GCode",
+        "pl": "💻 Konsola GCode",
+        "fr": "💻 Console GCode",
+        "es": "💻 Consola GCode",
+        "it": "💻 Console GCode",
+    },
+    "settings.cat_camera": {
+        "en": "📷 Camera",
+        "de": "📷 Kamera",
+        "ru": "📷 Камера",
+        "pl": "📷 Kamera",
+        "fr": "📷 Caméra",
+        "es": "📷 Cámara",
+        "it": "📷 Fotocamera",
+    },
+    "settings.cat_language": {
+        "en": "🌐 Language",
+        "de": "🌐 Sprache",
+        "ru": "🌐 Язык",
+        "pl": "🌐 Język",
+        "fr": "🌐 Langue",
+        "es": "🌐 Idioma",
+        "it": "🌐 Lingua",
+    },
+
+    # ── Macro Settings ───────────────────────────────────────────────────
+    "settings.macros.title": {
+        "en": "⚡ *Macro Settings*",
+        "de": "⚡ *Makro-Einstellungen*",
+        "ru": "⚡ *Настройки макросов*",
+        "pl": "⚡ *Ustawienia makr*",
+        "fr": "⚡ *Paramètres des macros*",
+    },
+    "settings.macros.aliases": {
+        "en": "✏️ Edit Aliases",
+        "de": "✏️ Aliase bearbeiten",
+        "ru": "✏️ Изменить алиасы",
+        "pl": "✏️ Edytuj aliasy",
+        "fr": "✏️ Modifier les alias",
+    },
+    "settings.macros.visibility": {
+        "en": "👁️ Hide/Show Macros",
+        "de": "👁️ Makros ein-/ausblenden",
+        "ru": "👁️ Показать/скрыть макросы",
+        "pl": "👁️ Ukryj/pokaż makra",
+        "fr": "👁️ Masquer/Afficher les macros",
+    },
+    "settings.macros.confirm": {
+        "en": "🛡️ Run Confirmation",
+        "de": "🛡️ Bestätigung ausführen",
+        "ru": "🛡️ Подтверждение запуска",
+        "pl": "🛡️ Potwierdzenie uruchomienia",
+        "fr": "🛡️ Confirmation d'exécution",
+    },
+    "settings.macros.alias_prompt": {
+        "en": "✏️ *Edit Alias*\n\nMacro: `{macro}`\nCurrent alias: `{alias}`\n\nType the new name or send /cancel:",
+        "de": "✏️ *Alias bearbeiten*\n\nMakro: `{macro}`\nAktueller Alias: `{alias}`\n\nGib den neuen Namen ein oder sende /cancel:",
+    },
+    "settings.macros.hide_title": {
+        "en": "👁️ *Hide/Show Macros*\n\nToggle which macros appear in the menu:",
+        "de": "👁️ *Makros ein-/ausblenden*\n\nWähle aus, welche Makros im Menü erscheinen:",
+    },
+    "settings.macros.confirm_title": {
+        "en": "🛡️ *Run Confirmation*\n\nToggle whether to ask for confirmation before running:",
+        "de": "🛡️ *Bestätigung ausführen*\n\nWähle aus, ob vor dem Ausführen eine Bestätigung abgefragt wird:",
+    },
+
+    # ── Temp Preset Settings ─────────────────────────────────────────────
+    "settings.temps.title": {
+        "en": "🌡️ *Temperature Presets*",
+        "de": "🌡️ *Temperatur-Vorlagen*",
+    },
+    "settings.temps.hotend": {
+        "en": "🔥 Hotend Presets",
+        "de": "🔥 Hotend-Vorlagen",
+    },
+    "settings.temps.bed": {
+        "en": "🛏️ Bed Presets",
+        "de": "🛏️ Bett-Vorlagen",
+    },
+    "settings.temps.prompt_val": {
+        "en": "🌡️ *{name}*\n\nEnter temperature in °C:",
+        "de": "🌡️ *{name}*\n\nGib die Temperatur in °C ein:",
+    },
+
+    # ── GCode Settings ───────────────────────────────────────────────────
+    "settings.gcode.title": {
+        "en": "💻 *GCode Quick Buttons*",
+        "de": "💻 *GCode-Schnellbefehle*",
+    },
+    "settings.gcode.prompt_label": {
+        "en": "✏️ *New Button*\n\nEnter button label (e.g. '💡 Lights On'):",
+        "de": "✏️ *Neuer Button*\n\nGib die Beschriftung ein (z.B. '💡 Licht an'):",
+    },
+    "settings.gcode.prompt_cmd": {
+        "en": "✏️ *New Button*\n\nEnter GCode command for '{label}':",
+        "de": "✏️ *Neuer Button*\n\nGib den GCode-Befehl für '{label}' ein:",
+    },
+
+    # ── Camera Settings ──────────────────────────────────────────────────
+    "settings.camera.title": {
+        "en": "📷 *Camera Settings*",
+        "de": "📷 *Kamera-Einstellungen*",
+    },
+    "settings.camera.show_menu": {
+        "en": "Show in Main Menu",
+        "de": "Im Hauptmenü anzeigen",
+    },
+
+    # ── Filament Helper ──────────────────────────────────────────────────
+    "filament.title": {
+        "en": "🔄 *Filament Change*",
+        "de": "🔄 *Filamentwechsel*",
+    },
+    "filament.unload": {
+        "en": "📤 Unload",
+        "de": "📤 Entladen",
+    },
+    "filament.load": {
+        "en": "📥 Load",
+        "de": "📥 Laden",
+    },
+    "filament.heating": {
+        "en": "🌡️ Heating to {temp}°C...",
+        "de": "🌡️ Aufheizen auf {temp}°C...",
+    },
+    "filament.done": {
+        "en": "✅ Filament action complete!",
+        "de": "✅ Filament-Aktion abgeschlossen!",
     },
 
     # ── Generic ──────────────────────────────────────────────────────────
