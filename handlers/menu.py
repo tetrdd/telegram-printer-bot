@@ -115,6 +115,7 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     from handlers.bed_mesh import cb_bed_mesh
     from handlers.history import cb_history
     from handlers.filament import cb_filament_menu
+    from handlers.move import cb_move
 
     routes = {
         "main": lambda: show_menu(q, uid(update)),
@@ -133,6 +134,7 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "bed_mesh": lambda: cb_bed_mesh(update, ctx),
         "history": lambda: cb_history(update, ctx),
         "filament": lambda: cb_filament_menu(update, ctx),
+        "move": lambda: cb_move(update, ctx),
     }
 
     handler = routes.get(target)

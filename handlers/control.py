@@ -34,6 +34,7 @@ async def cb_print_ctrl(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         buttons.append([btn(t("ctrl.cancel", L), "ctrl:cancel")])
     else:
         buttons.append([btn(t("ctrl.browse", L), "menu:files")])
+        buttons.append([btn(t("menu.move", L), "menu:move")])
 
     buttons.append([btn(t("ctrl.home", L), "ctrl:home"), btn(t("ctrl.motors_off", L), "ctrl:motors_off")])
     buttons.append([btn(t("btn.back_menu", L), "menu:main")])

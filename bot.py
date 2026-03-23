@@ -69,6 +69,7 @@ def main():
     from handlers.bed_mesh import cb_bed_mesh
     from handlers.history import cb_history, cb_history_page
     from handlers.filament import cb_filament_menu, cb_filament_action
+    from handlers.move import cb_move, cb_move_action
 
     # New settings handlers
     from handlers.settings_macros import (
@@ -250,6 +251,9 @@ def main():
     app.add_handler(CallbackQueryHandler(cb_adjust_flow, pattern=r"^adjust:flow:"))
     app.add_handler(CallbackQueryHandler(cb_adjust_fan, pattern=r"^adjust:fan:"))
     app.add_handler(CallbackQueryHandler(cb_adjust_z, pattern=r"^adjust:z:"))
+
+    # Move
+    app.add_handler(CallbackQueryHandler(cb_move_action, pattern=r"^move:"))
 
     # History
     app.add_handler(CallbackQueryHandler(cb_history_page, pattern=r"^history:page:"))
