@@ -44,7 +44,7 @@ def main_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     buttons.append(second_row)
 
     buttons.append([btn(t("menu.bed_mesh", L), "menu:bed_mesh"), btn(t("menu.filament", L), "menu:filament")])
-    buttons.append([btn(t("menu.settings", L), "menu:settings")])
+    buttons.append([btn(t("menu.move", L), "menu:move"), btn(t("menu.settings", L), "menu:settings")])
 
     if c.get("safety", {}).get("emergency_stop_enabled", True):
         buttons.append([btn(t("menu.estop", L), "menu:estop")])
@@ -133,6 +133,7 @@ async def cb_menu_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "bed_mesh": lambda: cb_bed_mesh(update, ctx),
         "history": lambda: cb_history(update, ctx),
         "filament": lambda: cb_filament_menu(update, ctx),
+        "move": lambda: cb_move_menu(update, ctx),
     }
 
     handler = routes.get(target)

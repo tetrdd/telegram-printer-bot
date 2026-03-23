@@ -141,6 +141,12 @@ STRINGS = {
         "es": "🔄 Filamento",
         "it": "🔄 Filamento",
     },
+    "menu.move": {
+        "en": "🕹️ Move",
+        "de": "🕹️ Bewegen",
+        "ru": "🕹️ Переместить",
+        "pl": "🕹️ Ruch",
+    },
 
     # ── Common ───────────────────────────────────────────────────────────
     "btn.back_menu": {
@@ -1329,6 +1335,16 @@ STRINGS = {
     "filament.done": {
         "en": "✅ Filament action complete!",
         "de": "✅ Filament-Aktion abgeschlossen!",
+    },
+
+    # ── Move ─────────────────────────────────────────────────────────────
+    "move.title": {
+        "en": "🕹️ *Move Axes*\n\nSelect distance and move:",
+        "de": "🕹️ *Achsen bewegen*\n\nWähle Distanz und bewege:",
+    },
+    "move.step": {
+        "en": "Step: {val}mm",
+        "de": "Schritt: {val}mm",
     },
 
     # ── Generic ──────────────────────────────────────────────────────────
