@@ -141,6 +141,15 @@ STRINGS = {
         "es": "🔄 Filamento",
         "it": "🔄 Filamento",
     },
+    "menu.move": {
+        "en": "🔀 Move",
+        "de": "🔀 Bewegen",
+        "ru": "🔀 Движение",
+        "pl": "🔀 Ruch",
+        "fr": "🔀 Déplacer",
+        "es": "🔀 Mover",
+        "it": "🔀 Muovi",
+    },
 
     # ── Common ───────────────────────────────────────────────────────────
     "btn.back_menu": {
@@ -554,6 +563,26 @@ STRINGS = {
         "de": "🔓 Motoren aus",
         "ru": "🔓 Моторы выкл.",
         "pl": "🔓 Silniki wył.",
+    },
+
+    # ── Move Controls ────────────────────────────────────────────────────
+    "move.title": {
+        "en": "🔀 *Move Axes*",
+        "de": "🔀 *Achsen bewegen*",
+        "ru": "🔀 *Движение осей*",
+        "pl": "🔀 *Ruch osi*",
+        "fr": "🔀 *Déplacer les axes*",
+        "es": "🔀 *Mover ejes*",
+        "it": "🔀 *Muovi assi*",
+    },
+    "move.step": {
+        "en": "Step: {val}mm",
+        "de": "Schritt: {val}mm",
+        "ru": "Шаг: {val}мм",
+        "pl": "Krok: {val}mm",
+        "fr": "Pas: {val}mm",
+        "es": "Paso: {val}mm",
+        "it": "Passo: {val}mm",
     },
 
     # ── Files ────────────────────────────────────────────────────────────
